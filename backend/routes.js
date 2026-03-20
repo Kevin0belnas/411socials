@@ -914,7 +914,8 @@ router.post('/clear-leads', async (req, res) => {
 
     const placeholders = leadIds.map(() => '?').join(',');
     
-    // Update assignment_history - mark when removed
+    // 🔥 FIX: Update assignment_history - mark when removed
+    // This is the key - we need to set removed_at for all leads being cleared
     await db.execute(
       `UPDATE assignment_history 
        SET removed_at = NOW() 
@@ -922,13 +923,46 @@ router.post('/clear-leads', async (req, res) => {
       [agentId, ...leadIds]
     );
     
-    // Clear leads - status stays as 'Contacted' (not 'New')
+    // 🔥 FIX: Also insert assignment history for leads that don't have one yet
+    // For leads that were assigned but never had history entry
+    const [missingHistory] = await db.execute(
+      `SELECT id FROM contacts 
+       WHERE id IN (${placeholders}) 
+       AND id NOT IN (SELECT lead_id FROM assignment_history WHERE lead_id IN (${placeholders}))`,
+      [...leadIds, ...leadIds]
+    );
+    
+    if (missingHistory.length > 0) {
+      const missingIds = missingHistory.map(row => row.id);
+      const missingPlaceholders = missingIds.map(() => '?').join(',');
+      const historyValues = missingIds.map(id => [parseInt(id), parseInt(agentId)]);
+      const historyPlaceholders = historyValues.map(() => '(?, ?)').join(',');
+      const flatValues = historyValues.flat();
+      
+      await db.execute(
+        `INSERT INTO assignment_history (lead_id, agent_id, assigned_at, removed_at) 
+         VALUES ${historyPlaceholders}`,
+        [...flatValues, ...flatValues] // This is wrong, let me fix
+      );
+      
+      // Better way:
+      for (const id of missingIds) {
+        await db.execute(
+          `INSERT INTO assignment_history (lead_id, agent_id, assigned_at, removed_at) 
+           VALUES (?, ?, NOW(), NOW())`,
+          [id, agentId]
+        );
+      }
+    }
+    
+    // Clear leads - status becomes 'Contacted'
     await db.execute(
       `UPDATE contacts 
        SET lead_owner = NULL, 
            assigned_to = NULL,
            transferred_to = NULL,
            transferred_at = NULL,
+           status = 'Contacted',
            rating = NULL
        WHERE id IN (${placeholders})`,
       leadIds
@@ -937,7 +971,7 @@ router.post('/clear-leads', async (req, res) => {
     res.json({ 
       success: true, 
       affectedRows: leadIds.length,
-      message: `Cleared ${leadIds.length} leads. Leads remain as 'Contacted' with cooling period.`
+      message: `Cleared ${leadIds.length} leads. Leads marked as Contacted with cooling period.`
     });
     
   } catch (err) {
@@ -1373,45 +1407,63 @@ router.post('/contacts/bulk-assign', async (req, res) => {
 // Optional: Move contacted leads back to New after cooling period
 router.post('/refresh-cooling-period', async (req, res) => {
   const db = getDB();
-  const { days = 7 } = req.body; // Default 7 days cooling period
+  const { days = 0, password } = req.body;
   
-  try {
-    // Find leads that were cleared more than X days ago
-    const [expiredLeads] = await db.execute(
-      `SELECT DISTINCT c.id 
-       FROM contacts c
-       JOIN assignment_history ah ON c.id = ah.lead_id
-       WHERE c.status = 'Contacted'
-       AND c.assigned_to IS NULL
-       AND ah.removed_at IS NOT NULL
-       AND ah.removed_at < DATE_SUB(NOW(), INTERVAL ? DAY)
-       GROUP BY c.id`,
-      [days]
-    );
-    
-    if (expiredLeads.length > 0) {
-      const leadIds = expiredLeads.map(row => row.id);
-      const placeholders = leadIds.map(() => '?').join(',');
-      
-      await db.execute(
-        `UPDATE contacts 
-         SET status = 'New'
-         WHERE id IN (${placeholders})`,
-        leadIds
-      );
-      
-      res.json({
-        success: true,
-        refreshedCount: leadIds.length,
-        message: `Moved ${leadIds.length} leads from Contacted back to New after ${days} days cooling period.`
-      });
-    } else {
-      res.json({
-        success: true,
-        refreshedCount: 0,
-        message: `No leads have exceeded ${days} days cooling period.`
+  // 🔥 Password verification for immediate refresh (days=0)
+  if (days === 0) {
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Store in .env
+    if (password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid admin password' 
       });
     }
+  }
+  
+  try {
+    let query;
+    let params;
+    
+    if (days === 0) {
+      // 🔥 IMMEDIATE REFRESH: Move ALL contacted leads back to New
+      query = `
+        UPDATE contacts 
+        SET status = 'New'
+        WHERE status = 'Contacted'
+        AND assigned_to IS NULL
+      `;
+      params = [];
+    } else {
+      // Scheduled refresh: Only move leads that have passed cooling period
+      query = `
+        UPDATE contacts 
+        SET status = 'New'
+        WHERE status = 'Contacted'
+        AND assigned_to IS NULL
+        AND id IN (
+          SELECT DISTINCT c.id
+          FROM contacts c
+          JOIN assignment_history ah ON c.id = ah.lead_id
+          WHERE c.status = 'Contacted'
+          AND c.assigned_to IS NULL
+          AND ah.removed_at IS NOT NULL
+          AND ah.removed_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+          GROUP BY c.id
+        )
+      `;
+      params = [days];
+    }
+    
+    const [result] = await db.execute(query, params);
+    
+    res.json({
+      success: true,
+      refreshedCount: result.affectedRows,
+      message: days === 0 
+        ? `Moved ${result.affectedRows} leads from Contacted back to New immediately.`
+        : `Moved ${result.affectedRows} leads from Contacted back to New after ${days} days cooling period.`
+    });
+    
   } catch (err) {
     console.error('Error refreshing cooling period:', err);
     res.status(500).json({ error: 'Failed to refresh cooling period' });

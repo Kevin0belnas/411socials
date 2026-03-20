@@ -898,7 +898,7 @@ import React, { useState, useEffect } from "react";
 import { 
   FaLock, FaSearch, FaPlus, FaFilter, FaUser, FaCalendarAlt, 
   FaPhone, FaEnvelope, FaBook, FaPen, FaTrash, FaTimes, 
-  FaChevronLeft, FaChevronRight, FaRandom 
+  FaChevronLeft, FaChevronRight, FaRandom, FaSync 
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -941,6 +941,48 @@ export default function Contacts() {
     name: "", email: "", phone: [""], leadOwner: "",
     author: "", publisher: "", book: ""
   }]);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+
+  const [refreshingCooling, setRefreshingCooling] = useState(false);
+
+
+  // Replace your existing handleRefreshCooling with this
+const handleRefreshCooling = () => {
+  setShowPasswordModal(true);
+};
+
+const confirmRefreshCooling = async () => {
+  setRefreshingCooling(true);
+  try {
+    const response = await fetch(`${API_URL}/api/refresh-cooling-period`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: 0, password: adminPassword })
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      toast.success(result.message);
+      refreshContacts(); // Refresh the list
+    } else {
+      toast.error(result.message || 'Failed to refresh cooling period');
+    }
+  } catch (error) {
+    console.error('Error refreshing cooling period:', error);
+    toast.error('Failed to refresh cooling period');
+  } finally {
+    setRefreshingCooling(false);
+    setShowPasswordModal(false);
+    setAdminPassword('');
+  }
+};
+
+const cancelPasswordModal = () => {
+  setShowPasswordModal(false);
+  setAdminPassword('');
+  setRefreshingCooling(false);
+};
 
   // Fetch data from API
   useEffect(() => {
@@ -1391,7 +1433,7 @@ export default function Contacts() {
             }}
             className="p-1 border border-gray-300 rounded"
           >
-            {[10, 25, 50, 100, 500, 1000, 2000].map(size => (
+            {[5,10, 25, 50, 100, 500, 1000, 2000].map(size => (
               <option key={size} value={size}>{size}</option>
             ))}
           </select>
@@ -1440,6 +1482,7 @@ export default function Contacts() {
             </span>
           </div>
           <div className="flex items-center gap-2.5">
+            
             <button 
               className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm"
               onClick={handleRedirect}
@@ -1710,6 +1753,95 @@ export default function Contacts() {
       
       {/* Second Pagination (only in normal mode) */}
       {!randomMode && <PaginationControls />}
+
+      {/* 🔥 Footer with Admin Action */}
+<div className="mt-8 pt-4 border-t border-gray-200">
+  <div className="flex justify-end">
+    <button
+      onClick={handleRefreshCooling}
+      disabled={refreshingCooling}
+      className="text-gray-400 hover:text-red-500 text-xs flex items-center gap-1 transition-colors"
+      title="Admin: Reset cooling period (move all contacted leads back to New)"
+    >
+      <FaSync className={`text-xs ${refreshingCooling ? 'animate-spin' : ''}`} />
+      <span className="hidden sm:inline">Admin: Reset Cooling Period</span>
+    </button>
+  </div>
+</div>
+
+{/* Password Confirmation Modal */}
+{showPasswordModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold text-red-600 flex items-center gap-2">
+          <FaSync className="text-sm" />
+          Admin Action Required
+        </h3>
+        <button
+          onClick={cancelPasswordModal}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <FaTimes />
+        </button>
+      </div>
+      
+      <div className="mb-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-red-700 font-medium">⚠️ Warning</p>
+          <p className="text-xs text-red-600 mt-1">
+            This action will move ALL contacted leads back to "New" status immediately.
+            This bypasses the cooling period and cannot be undone.
+          </p>
+        </div>
+        
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Enter Admin Password
+        </label>
+        <input
+          type="password"
+          value={adminPassword}
+          onChange={(e) => setAdminPassword(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              confirmRefreshCooling();
+            }
+          }}
+          placeholder="Enter admin password"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          autoFocus
+        />
+      </div>
+      
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={cancelPasswordModal}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={confirmRefreshCooling}
+          disabled={!adminPassword || refreshingCooling}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {refreshingCooling ? (
+            <>
+              <FaSync className="animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <FaSync />
+              Confirm Reset
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Create Contact Modal */}
       {showCreateModal && (
