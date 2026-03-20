@@ -1,18 +1,911 @@
+// import React, { useState, useEffect } from "react";
+// import { 
+//   FaLock, FaSearch, FaPlus, FaFilter, FaUser, FaCalendarAlt, 
+//   FaPhone, FaEnvelope, FaBook, FaPen, FaTrash, FaTimes, 
+//   FaChevronLeft, FaChevronRight 
+// } from "react-icons/fa";
+// import { toast } from 'react-toastify';
+// import 'react-toastify/dist/ReactToastify.css';
+// const API_URL = import.meta.env.VITE_API_URL;
+// import { useNavigate } from 'react-router-dom';
+
+// export default function Contacts() {
+//     const navigate = useNavigate();
+
+//   // State management
+//   const [contacts, setContacts] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [activeTab, setActiveTab] = useState("all");
+//   const [showCreateModal, setShowCreateModal] = useState(false);
+//   const [showDeleteModal, setShowDeleteModal] = useState(false);
+//   const [showEditModal, setShowEditModal] = useState(false);
+//   const [showAssignModal, setShowAssignModal] = useState(false);
+//   const [contactToDelete, setContactToDelete] = useState(null);
+//   const [contactToEdit, setContactToEdit] = useState(null);
+  
+//   const [stats, setStats] = useState({
+//     total: 0,
+//     assigned: 0,
+//     unassigned: 0
+//   });
+//   const [selectedContacts, setSelectedContacts] = useState([]);
+//   const [selectAll, setSelectAll] = useState(false);
+//   const [pageSize, setPageSize] = useState(25);
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [agents, setAgents] = useState([]);
+//   const [selectedAgent, setSelectedAgent] = useState("");
+
+//   const [contactsBatch, setContactsBatch] = useState([{
+//     name: "", email: "", phone: [""], leadOwner: "",
+//     author: "", publisher: "", book: ""
+//   }]);
+
+//   // Fetch data from API
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         setLoading(true);
+        
+//         let contactsUrl = `${API_URL}/api/contacts?page=${currentPage}&pageSize=${pageSize}`;
+//         const params = new URLSearchParams();
+        
+//         if (searchTerm) params.append('search', searchTerm);
+//         if (activeTab === 'my') params.append('view', 'my');
+//         if (activeTab === 'unassigned') params.append('view', 'unassigned');
+        
+//         if (params.toString()) contactsUrl += `&${params.toString()}`;
+        
+//         const [contactsResponse, agentsResponse] = await Promise.all([
+//           fetch(contactsUrl),
+//           fetch(`${API_URL}/api/agents`)
+//         ]);
+
+//         const contactsData = await contactsResponse.json();
+//         const receivedContacts = Array.isArray(contactsData) ? contactsData : contactsData.contacts || [];
+//         setContacts(receivedContacts);
+        
+//         const agentsData = await agentsResponse.json();
+//         if (!Array.isArray(agentsData)) {
+//           throw new Error('Agents data is not in expected format');
+//         }
+        
+//         setAgents(agentsData);
+//         setStats({
+//           total: contactsData.totalCount || receivedContacts.length,
+//           assigned: contactsData.assignedCount || receivedContacts.filter(c => c.assigned_to).length,
+//           unassigned: contactsData.unassignedCount || receivedContacts.filter(c => !c.assigned_to).length
+//         });
+
+//       } catch (error) {
+//         console.error("Error fetching data:", error);
+//         toast.error("Failed to load data");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+    
+//     fetchData();
+//   }, [searchTerm, activeTab, pageSize, currentPage]);
+
+//   const handleRedirect = () => {
+//     navigate('/changeleads');
+//   };
+
+//   const handleCreateContacts = async (e) => {
+//     e.preventDefault();
+//     try {
+//       const contactsToSubmit = contactsBatch.map(contact => ({
+//         name: contact.name,
+//         email: contact.email,
+//         phone: JSON.stringify(contact.phone.filter(p => p !== "")),
+//         leadOwner: contact.leadOwner,
+//         author: contact.author,
+//         publisher: contact.publisher,
+//         bookTitle: contact.book
+//       })).filter(contact => contact.name.trim() !== "");
+
+//       if (contactsToSubmit.length === 0) {
+//         throw new Error("No valid contacts to create");
+//       }
+
+//       const response = await fetch(`${API_URL}/api/contacts/batch`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(contactsToSubmit)
+//       });
+      
+//       if (!response.ok) throw new Error(await response.text());
+      
+//       toast.success(`Successfully created ${contactsToSubmit.length} contacts!`);
+//       setShowCreateModal(false);
+//       setContactsBatch([{
+//         name: "", email: "", phone: [""], leadOwner: "",
+//         author: "", publisher: "", book: ""
+//       }]);
+//       refreshContacts();
+//     } catch (error) {
+//       toast.error(error.message);
+//     }
+//   };
+
+//   const handleContactChange = (index, field, value) => {
+//     const updatedBatch = [...contactsBatch];
+//     updatedBatch[index] = {
+//       ...updatedBatch[index],
+//       [field]: value
+//     };
+//     setContactsBatch(updatedBatch);
+//   };
+
+//   const handlePhoneChange = (contactIndex, phoneIndex, value) => {
+//     const updatedBatch = [...contactsBatch];
+//     let updatedPhones = [...updatedBatch[contactIndex].phone];
+    
+//     updatedPhones[phoneIndex] = value;
+    
+//     if (phoneIndex === updatedPhones.length - 1 && value.trim() !== "") {
+//       updatedPhones.push("");
+//     }
+    
+//     updatedPhones = updatedPhones.filter((p, i) => 
+//       p.trim() !== "" || i === updatedPhones.length - 1
+//     );
+    
+//     updatedBatch[contactIndex] = {
+//       ...updatedBatch[contactIndex],
+//       phone: updatedPhones
+//     };
+    
+//     setContactsBatch(updatedBatch);
+//   };
+
+//   const addNewContact = () => {
+//     setContactsBatch([...contactsBatch, {
+//       name: "", email: "", phone: [""], leadOwner: "",
+//       author: "", publisher: "", book: ""
+//     }]);
+//   };
+
+//   const removeContact = (index) => {
+//     if (contactsBatch.length <= 1) return;
+//     const updatedBatch = [...contactsBatch];
+//     updatedBatch.splice(index, 1);
+//     setContactsBatch(updatedBatch);
+//   };
+
+//   const handleEditContact = async (e) => {
+//     e.preventDefault();
+//     try {
+//       const response = await fetch(`${API_URL}/api/contacts/${contactToEdit.id}`, {
+//         method: 'PUT',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({
+//           name: contactToEdit.name,
+//           email: contactToEdit.email,
+//           phone: contactToEdit.phone,
+//           leadOwner: contactToEdit.leadOwner,
+//           author: contactToEdit.author,
+//           publisher: contactToEdit.publisher,
+//           bookTitle: contactToEdit.book
+//         })
+//       });
+      
+//       if (!response.ok) throw new Error(await response.text());
+      
+//       toast.success("Contact updated successfully!");
+//       setShowEditModal(false);
+//       refreshContacts();
+//     } catch (error) {
+//       toast.error(error.message);
+//     }
+//   };
+
+//   const handleDeleteContact = async () => {
+//     try {
+//       const ids = Array.isArray(contactToDelete) ? contactToDelete : [contactToDelete];
+
+//       const response = await fetch(`${API_URL}/api/contacts/bulk-delete`, {
+//         method: 'DELETE',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ contactIds: ids })
+//       });
+
+//       if (!response.ok) throw new Error(await response.text());
+
+//       toast.success(`${ids.length} contact(s) deleted successfully!`);
+//       setShowDeleteModal(false);
+//       setSelectedContacts([]);
+//       setSelectAll(false);
+//       refreshContacts();
+//     } catch (error) {
+//       toast.error(error.message);
+//     }
+//   };
+
+//   const handleBulkAssign = async () => {
+//     if (!selectedAgent) {
+//       alert("Please select an agent first");
+//       return;
+//     }
+
+//     try {
+//       console.log('Sending bulk assign request:', {
+//         contactIds: selectedContacts,
+//         assignedTo: selectedAgent
+//       });
+      
+//       const response = await fetch(`${API_URL}/api/contacts/bulk-assign`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({
+//           contactIds: selectedContacts,
+//           assignedTo: selectedAgent
+//         })
+//       });
+      
+//       console.log('Response status:', response.status);
+      
+//       const responseText = await response.text();
+//       console.log('Response text:', responseText);
+      
+//       if (!response.ok) {
+//         console.error('Response not OK:', responseText);
+//         throw new Error(responseText);
+//       }
+      
+//       const result = JSON.parse(responseText);
+//       console.log('Parsed result:', result);
+      
+//       if (result.success === false) {
+//         alert(`⚠️ ${result.message || 'All leads were already assigned to this agent.'}`);
+//       } else {
+//         const assignedCount = result.updatedCount || 0;
+//         const skippedCount = result.skipped || 0;
+        
+//         if (assignedCount > 0 && skippedCount > 0) {
+//           alert(`✅ ${assignedCount} lead(s) assigned successfully!\n${skippedCount} lead(s) were already assigned to this agent.`);
+//         } else if (assignedCount > 0) {
+//           alert(`✅ ${assignedCount} lead(s) assigned successfully!`);
+//         } else {
+//           alert(`⚠️ No leads were assigned. Please check selection.`);
+//         }
+//       }
+      
+//       setShowAssignModal(false);
+//       setSelectedContacts([]);
+//       setSelectAll(false);
+//       refreshContacts();
+//     } catch (error) {
+//       console.error('Error in handleBulkAssign:', error);
+//       alert(`❌ Error: ${error.message || 'Failed to assign leads'}`);
+//     }
+//   };
+
+//   const refreshContacts = async () => {
+//     const response = await fetch(
+//       `${API_URL}/api/contacts?page=${currentPage}&pageSize=${pageSize}`
+//     );
+//     const data = await response.json();
+//     setContacts(data.contacts || data);
+//   };
+
+//   const toggleSelectAll = (e) => {
+//     const isChecked = e.target.checked;
+//     setSelectAll(isChecked);
+//     setSelectedContacts(isChecked ? contacts.filter(c => !c.assigned_to).map(c => c.id) : []);
+//   };
+
+//   const toggleContactSelection = (contactId) => {
+//     const contact = contacts.find(c => c.id === contactId);
+//     if (contact?.assigned_to) return;
+    
+//     setSelectedContacts(prev => 
+//       prev.includes(contactId) 
+//         ? prev.filter(id => id !== contactId) 
+//         : [...prev, contactId]
+//     );
+//     setSelectAll(false);
+//   };
+
+//   const openEditModal = (contact) => {
+//     setContactToEdit({
+//       id: contact.id,
+//       name: contact.name,
+//       email: contact.email,
+//       phone: contact.phone,
+//       leadOwner: contact.lead_owner,
+//       author: contact.author,
+//       publisher: contact.publisher,
+//       book: contact.book_title
+//     });
+//     setShowEditModal(true);
+//   };
+
+//   const PaginationControls = () => {
+//     const totalPages = Math.ceil(stats.total / pageSize);
+    
+//     return (
+//       <div className="flex justify-between items-center mb-5">
+//         <div className="flex items-center gap-1.5 text-sm">
+//           <span>Show:</span>
+//           <select 
+//             value={pageSize} 
+//             onChange={(e) => {
+//               setPageSize(Number(e.target.value));
+//               setCurrentPage(1);
+//             }}
+//             className="p-1 border border-gray-300 rounded"
+//           >
+//             {[10, 25, 50, 100, 500, 1000, 2000].map(size => (
+//               <option key={size} value={size}>{size}</option>
+//             ))}
+//           </select>
+//           <span>contacts per page</span>
+//         </div>
+        
+//         <div className="flex items-center gap-2.5">
+//           <button 
+//             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+//             disabled={currentPage === 1}
+//             className="p-1.5 px-2.5 bg-gray-100 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+//           >
+//             <FaChevronLeft size={12} />
+//           </button>
+//           <span className="text-xs">
+//             Page {currentPage} of {totalPages}
+//           </span>
+//           <button 
+//             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+//             disabled={currentPage === totalPages}
+//             className="p-1.5 px-2.5 bg-gray-100 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+//           >
+//             <FaChevronRight size={12} />
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <div className="font-sans p-5 bg-gray-100 min-h-screen">
+//       {/* Header */}
+//       <div className="flex justify-between items-center mb-5">
+//         <div className="flex items-center gap-5 bg-[#0B79A1] p-2 rounded w-full justify-between p-2.5 text-white">
+//           <div className="flex flex-col">
+//             <span className="text-4xl font-bold mb-1">Contacts</span>
+//             <span className="text-sm text-white">
+//               {stats.total} records ({stats.assigned} assigned, {stats.unassigned} unassigned)
+//             </span>
+//           </div>
+//           <div className="flex items-center gap-2.5">
+//             <button 
+//               className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm"
+//               onClick={handleRedirect}
+//             >
+//               Change Leads
+//             </button>          
+//             <button 
+//               className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35]"
+//               onClick={() => setShowCreateModal(true)}
+//             >
+//               <FaPlus size={12} /> Create contact
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Tabs */}
+//       <div className="flex border-b border-gray-300 mb-5">
+//         <div 
+//           className={`px-5 py-2.5 cursor-pointer border-b-2 text-sm ${
+//             activeTab === 'all' ? 'border-[#ff6b35] font-bold' : 'border-transparent'
+//           }`}
+//           onClick={() => setActiveTab('all')}
+//         >
+//           All contacts
+//         </div>
+//         <div 
+//           className={`px-5 py-2.5 cursor-pointer border-b-2 text-sm ${
+//             activeTab === 'unassigned' ? 'border-[#ff6b35] font-bold' : 'border-transparent'
+//           }`}
+//           onClick={() => setActiveTab('unassigned')}
+//         >
+//           Unassigned contacts
+//         </div>
+//       </div>
+
+//       {/* Search Bar */}
+//       <div className="relative mb-5 w-full max-w-md">
+//         <FaSearch className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
+//         <input
+//           type="text"
+//           placeholder="Search name, phone, email"
+//           className="w-full p-2 pl-9 rounded border border-gray-300 text-sm"
+//           value={searchTerm}
+//           onChange={(e) => setSearchTerm(e.target.value)}
+//         />
+//       </div>
+
+//       {/* Bulk Actions */}
+//       {selectedContacts.length > 0 && (
+//         <div className="flex items-center gap-2.5 mb-5 p-2.5 bg-gray-200 rounded text-sm">
+//           <span>{selectedContacts.length} unassigned contacts selected</span>
+//           {contacts.some(c => c.assigned_to && selectedContacts.includes(c.id)) && (
+//             <span className="text-gray-400 ml-2.5">
+//               (Assigned contacts cannot be selected)
+//             </span>
+//           )}
+//           <button 
+//             className="px-2.5 py-1 text-xs bg-[#00A550] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white"
+//             onClick={() => setShowAssignModal(true)}
+//           >
+//             <FaUser size={10} /> Assign to Agent
+//           </button>
+//         </div>
+//       )}
+
+//       {/* Pagination */}
+//       <PaginationControls />
+
+//       {/* Table */}
+//       {loading ? (
+//         <div className="p-5 text-center text-gray-500">Loading contacts...</div>
+//       ) : (
+//         <div className="bg-white rounded overflow-hidden shadow-sm">
+//           <table className="w-full border-collapse">
+//             <thead>
+//               <tr>
+//                 <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+//                   <input
+//                     type="checkbox"
+//                     checked={selectAll}
+//                     onChange={toggleSelectAll}
+//                     className="cursor-pointer"
+//                   />
+//                 </th>
+//                 <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+//                   AUTHOR & LEAD OWNER
+//                 </th>
+//                 <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+//                   EMAIL & PHONE
+//                 </th>
+//                 <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+//                   BOOK TITLE
+//                 </th>
+//                 <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+//                   COMMENTS
+//                 </th>
+//                 <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+//                   ACTIONS
+//                 </th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {contacts.length > 0 ? (
+//                 contacts.map(contact => (
+//                   <tr key={contact.id}>
+//                     <td className="p-2.5 border-b border-gray-300 text-sm">
+//                       <input
+//                         type="checkbox"
+//                         checked={selectedContacts.includes(contact.id)}
+//                         onChange={() => toggleContactSelection(contact.id)}
+//                         className="cursor-pointer"
+//                         disabled={!!contact.assigned_to}
+//                         title={contact.assigned_to ? "Already assigned" : ""}
+//                       />
+//                       {contact.assigned_to && <FaLock size={12} className="ml-1.5" />}
+//                     </td>
+//                     <td className="p-2.5 border-b border-gray-300 text-sm">
+//                       <div>
+//                         <div><strong>Author:</strong> {contact.name || '-'}</div>
+//                         <div className="mt-1 text-blue-600"><strong>Lead Owner:</strong> {contact.lead_owner || '-'}</div>
+//                       </div>
+//                     </td>
+//                     <td className="p-2.5 border-b border-gray-300 text-sm">
+//                       <div>
+//                         <div>{contact.email || '-'}</div>
+//                         <div className="mt-1 text-sm text-blue-600">
+//                           {(() => {
+//                             try {
+//                               const phones = JSON.parse(contact.phone);
+//                               return Array.isArray(phones) ? phones.join(', ') : contact.phone;
+//                             } catch {
+//                               return contact.phone || '-';
+//                             }
+//                           })()}
+//                         </div>
+//                       </div>
+//                     </td>
+//                     <td className="p-2.5 border-b border-gray-300 text-sm max-w-[170px] break-words overflow-wrap-break-word whitespace-normal">
+//                       {contact.book_title || '-'}
+//                     </td>
+//                     <td className="p-2.5 border-b border-gray-300 text-sm">
+//                       {contact.comments || "-"}
+//                     </td>
+//                     <td className="p-2.5 border-b border-gray-300 text-sm">
+//                       <div className="flex gap-1">
+//                         <button 
+//                           className="px-2.5 py-1 text-xs bg-[#00A550] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white"
+//                           onClick={() => openEditModal(contact)}
+//                         >
+//                           <FaPen size={10} /> Edit
+//                         </button>
+//                         <button 
+//                           className="px-2.5 py-1 text-xs bg-[#ff4444] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white border-[#ff4444]"
+//                           onClick={() => {
+//                             setContactToDelete(contact.id);
+//                             setShowDeleteModal(true);
+//                           }}
+//                         >
+//                           <FaTrash size={10} /> Delete
+//                         </button>
+//                       </div>
+//                     </td>
+//                   </tr>
+//                 ))
+//               ) : (
+//                 <tr>
+//                   <td colSpan="7" className="text-center p-5">
+//                     No contacts found
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+//         </div>
+//       )}
+      
+//       <PaginationControls />
+
+//       {/* Create Contact Modal */}
+//       {showCreateModal && (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+//           <div className="bg-white rounded w-full max-w-2xl max-h-[90vh] overflow-y-auto text-black font-serif">
+//             <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+//               <h3 className="text-lg font-bold m-0">Create Multiple Contacts</h3>
+//               <button 
+//                 className="bg-none border-none cursor-pointer text-base text-gray-500"
+//                 onClick={() => setShowCreateModal(false)}
+//               >
+//                 <FaTimes />
+//               </button>
+//             </div>
+//             <form onSubmit={handleCreateContacts}>
+//               {contactsBatch.map((contact, contactIndex) => (
+//                 <div key={contactIndex} className="mb-5 p-4 border border-gray-200 rounded relative">
+//                   <div className="absolute top-1 right-1 flex gap-1">
+//                     <button 
+//                       type="button"
+//                       onClick={() => removeContact(contactIndex)}
+//                       className="bg-[#ff4444] text-white border-none rounded px-1.5 py-0.5 cursor-pointer disabled:opacity-50"
+//                       disabled={contactsBatch.length <= 1}
+//                     >
+//                       <FaTimes />
+//                     </button>
+//                   </div>
+                  
+//                   <h4 className="mt-0 mb-4">Contact #{contactIndex + 1}</h4>
+                  
+//                   <div className="mb-5 px-0">
+//                     <label className="block mb-1 text-sm font-bold">Name*</label>
+//                     <input
+//                       type="text"
+//                       className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                       value={contact.name}
+//                       onChange={(e) => handleContactChange(contactIndex, 'name', e.target.value)}
+//                       required
+//                     />
+//                   </div>
+                  
+//                   <div className="mb-5 px-0">
+//                     <label className="block mb-1 text-sm font-bold">Email</label>
+//                     <input
+//                       type="email"
+//                       className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                       value={contact.email}
+//                       onChange={(e) => handleContactChange(contactIndex, 'email', e.target.value)}
+//                     />
+//                   </div>
+                  
+//                   <div className="mb-5 px-0">
+//                     <label className="block mb-1 text-sm font-bold">Phone Numbers</label>
+//                     {contact.phone.map((phone, phoneIndex) => (
+//                       <div key={phoneIndex} className="flex items-center mb-1">
+//                         <input
+//                           type="tel"
+//                           className="flex-1 p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                           value={phone}
+//                           onChange={(e) => handlePhoneChange(contactIndex, phoneIndex, e.target.value)}
+//                           placeholder={`Phone #${phoneIndex + 1}`}
+//                         />
+//                         {phoneIndex !== contact.phone.length - 1 && (
+//                           <button 
+//                             type="button"
+//                             onClick={() => {
+//                               const updatedBatch = [...contactsBatch];
+//                               const updatedPhones = [...contact.phone];
+//                               updatedPhones.splice(phoneIndex, 1);
+//                               updatedBatch[contactIndex] = {
+//                                 ...contact,
+//                                 phone: updatedPhones
+//                               };
+//                               setContactsBatch(updatedBatch);
+//                             }}
+//                             className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm ml-1.5 px-2.5 py-1"
+//                           >
+//                             <FaTimes />
+//                           </button>
+//                         )}
+//                       </div>
+//                     ))}
+//                   </div>
+                  
+//                   <div className="mb-5 px-0">
+//                     <label className="block mb-1 text-sm font-bold">Author</label>
+//                     <input
+//                       type="text"
+//                       className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                       value={contact.author}
+//                       onChange={(e) => handleContactChange(contactIndex, 'author', e.target.value)}
+//                     />
+//                   </div>
+                  
+//                   <div className="mb-5 px-0">
+//                     <label className="block mb-1 text-sm font-bold">Publisher</label>
+//                     <input
+//                       type="text"
+//                       className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                       value={contact.publisher}
+//                       onChange={(e) => handleContactChange(contactIndex, 'publisher', e.target.value)}
+//                     />
+//                   </div>
+                  
+//                   <div className="mb-5 px-0">
+//                     <label className="block mb-1 text-sm font-bold">Book Title</label>
+//                     <input
+//                       type="text"
+//                       className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                       value={contact.book}
+//                       onChange={(e) => handleContactChange(contactIndex, 'book', e.target.value)}
+//                     />
+//                   </div>
+//                 </div>
+//               ))}
+              
+//               <div className="mb-5">
+//                 <button 
+//                   type="button"
+//                   onClick={addNewContact}
+//                   className="px-4 py-2 bg-[#4CAF50] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm"
+//                 >
+//                   <FaPlus /> Add Another Contact
+//                 </button>
+//               </div>
+              
+//               <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
+//                 <button 
+//                   type="button" 
+//                   className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
+//                   onClick={() => setShowCreateModal(false)}
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button 
+//                   type="submit" 
+//                   className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35]"
+//                 >
+//                   Create {contactsBatch.length} Contacts
+//                 </button>
+//               </div>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Edit Contact Modal */}
+//       {showEditModal && contactToEdit && (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+//           <div className="bg-white rounded w-full max-w-lg max-h-[90vh] overflow-y-auto text-black font-serif">
+//             <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+//               <h3 className="text-lg font-bold m-0">Edit Contact</h3>
+//               <button 
+//                 className="bg-none border-none cursor-pointer text-base text-gray-500"
+//                 onClick={() => setShowEditModal(false)}
+//               >
+//                 <FaTimes />
+//               </button>
+//             </div>
+//             <form onSubmit={handleEditContact}>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Name*</label>
+//                 <input
+//                   type="text"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.name}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, name: e.target.value})}
+//                   required
+//                 />
+//               </div>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Email</label>
+//                 <input
+//                   type="email"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.email}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, email: e.target.value})}
+//                 />
+//               </div>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Phone</label>
+//                 <input
+//                   type="tel"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.phone}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, phone: e.target.value})}
+//                 />
+//               </div>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Lead Owner</label>
+//                 <input
+//                   type="text"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.leadOwner}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, leadOwner: e.target.value})}
+//                 />
+//               </div>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Author</label>
+//                 <input
+//                   type="text"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.author}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, author: e.target.value})}
+//                 />
+//               </div>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Publisher</label>
+//                 <input
+//                   type="text"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.publisher}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, publisher: e.target.value})}
+//                 />
+//               </div>
+//               <div className="mb-5 px-5">
+//                 <label className="block mb-1 text-sm font-bold">Book Title</label>
+//                 <input
+//                   type="text"
+//                   className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+//                   value={contactToEdit.book}
+//                   onChange={(e) => setContactToEdit({...contactToEdit, book: e.target.value})}
+//                 />
+//               </div>
+//               <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
+//                 <button 
+//                   type="button" 
+//                   className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
+//                   onClick={() => setShowEditModal(false)}
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button 
+//                   type="submit" 
+//                   className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35]"
+//                 >
+//                   Update Contact
+//                 </button>
+//               </div>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Assign Contacts Modal */}
+//       {showAssignModal && (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+//           <div className="bg-white rounded w-full max-w-lg max-h-[90vh] overflow-y-auto text-black font-serif">
+//             <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+//               <h3 className="text-lg font-bold m-0">Assign {selectedContacts.length} Contacts</h3>
+//               <button onClick={() => setShowAssignModal(false)} className="bg-none border-none cursor-pointer text-base text-gray-500">
+//                 <FaTimes />
+//               </button>
+//             </div>
+//             <div className="mb-5 px-5">
+//               <label className="block mb-1 text-sm font-bold">Select Agent*</label>
+//               <select
+//                 value={selectedAgent}
+//                 onChange={(e) => setSelectedAgent(e.target.value)}
+//                 className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm bg-white"
+//                 required
+//               >
+//                 <option value="">-- Select Agent --</option>
+//                 {agents.map(agent => (
+//                   <option key={agent.id} value={agent.id}>
+//                     {agent.name} ({agent.email})
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+//             <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
+//               <button 
+//                 type="button" 
+//                 className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
+//                 onClick={() => setShowAssignModal(false)}
+//               >
+//                 Cancel
+//               </button>
+//               <button 
+//                 type="button" 
+//                 className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35] disabled:opacity-50 disabled:cursor-not-allowed"
+//                 onClick={handleBulkAssign}
+//                 disabled={!selectedAgent}
+//               >
+//                 Assign Contacts
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Delete Confirmation Modal */}
+//       {showDeleteModal && (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+//           <div className="bg-white rounded w-full max-w-lg max-h-[90vh] overflow-y-auto text-black font-serif">
+//             <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+//               <h3 className="text-lg font-bold m-0">
+//                 Confirm Delete {Array.isArray(contactToDelete) ? `${contactToDelete.length} Contacts` : 'Contact'}
+//               </h3>
+//               <button 
+//                 className="bg-none border-none cursor-pointer text-base text-gray-500"
+//                 onClick={() => setShowDeleteModal(false)}
+//               >
+//                 <FaTimes />
+//               </button>
+//             </div>
+//             <div className="p-5">
+//               <p>
+//                 Are you sure you want to delete {Array.isArray(contactToDelete) 
+//                   ? `${contactToDelete.length} contacts` 
+//                   : 'this contact'}? This action cannot be undone.
+//               </p>
+//             </div>
+//             <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
+//               <button 
+//                 type="button" 
+//                 className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
+//                 onClick={() => setShowDeleteModal(false)}
+//               >
+//                 Cancel
+//               </button>
+//               <button 
+//                 type="button" 
+//                 className="px-4 py-2 bg-[#ff4444] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm text-white border-[#ff4444]"
+//                 onClick={handleDeleteContact}
+//               >
+//                 Confirm Delete
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
 
 import React, { useState, useEffect } from "react";
 import { 
   FaLock, FaSearch, FaPlus, FaFilter, FaUser, FaCalendarAlt, 
   FaPhone, FaEnvelope, FaBook, FaPen, FaTrash, FaTimes, 
-  FaChevronLeft, FaChevronRight 
+  FaChevronLeft, FaChevronRight, FaRandom 
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 const API_URL = import.meta.env.VITE_API_URL;
 import { useNavigate } from 'react-router-dom';
 
-
 export default function Contacts() {
-
     const navigate = useNavigate();
 
   // State management
@@ -26,15 +919,12 @@ export default function Contacts() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
   const [contactToEdit, setContactToEdit] = useState(null);
-  // const [newContact, setNewContact] = useState({
-  //   name: "",
-  //   email: "",
-  //   phone: "",
-  //   leadOwner: "",
-  //   author: "",
-  //   publisher: "",
-  //   book: ""
-  // });
+  
+  // Random contacts state
+  const [randomMode, setRandomMode] = useState(false);
+  const [randomContacts, setRandomContacts] = useState([]);
+  const [randomLoading, setRandomLoading] = useState(false);
+  
   const [stats, setStats] = useState({
     total: 0,
     assigned: 0,
@@ -48,149 +938,255 @@ export default function Contacts() {
   const [selectedAgent, setSelectedAgent] = useState("");
 
   const [contactsBatch, setContactsBatch] = useState([{
-  name: "", email: "", phone: [""], leadOwner: "",
-  author: "", publisher: "", book: ""
-}]);
+    name: "", email: "", phone: [""], leadOwner: "",
+    author: "", publisher: "", book: ""
+  }]);
 
   // Fetch data from API
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch contacts with pagination
-        let contactsUrl = `${API_URL}/api/contacts?page=${currentPage}&pageSize=${pageSize}`;
-        const params = new URLSearchParams();
-        
-        if (searchTerm) params.append('search', searchTerm);
-        if (activeTab === 'my') params.append('view', 'my');
-        if (activeTab === 'unassigned') params.append('view', 'unassigned');
-        
-        if (params.toString()) contactsUrl += `&${params.toString()}`;
-        
-        // Fetch contacts and agents in parallel
-        const [contactsResponse, agentsResponse] = await Promise.all([
-          fetch(contactsUrl),
-          fetch(`${API_URL}/api/agents`)
-        ]);
+    if (!randomMode) {
+      fetchData();
+    }
+  }, [searchTerm, activeTab, pageSize, currentPage, randomMode]);
 
-        // Handle contacts response
-        const contactsData = await contactsResponse.json();
-        const receivedContacts = Array.isArray(contactsData) ? contactsData : contactsData.contacts || [];
-        setContacts(receivedContacts);
-        
-        // Handle agents response
-        const agentsData = await agentsResponse.json();
-        if (!Array.isArray(agentsData)) {
-          throw new Error('Agents data is not in expected format');
-        }
-        
-        setAgents(agentsData);
-        setStats({
-          total: contactsData.totalCount || receivedContacts.length,
-          assigned: contactsData.assignedCount || receivedContacts.filter(c => c.assigned_to).length,
-          unassigned: contactsData.unassignedCount || receivedContacts.filter(c => !c.assigned_to).length
-        });
+  // const fetchData = async () => {
+  //   try {
+  //     setLoading(true);
+      
+  //     let contactsUrl = `${API_URL}/api/contacts?page=${currentPage}&pageSize=${pageSize}`;
+  //     const params = new URLSearchParams();
+      
+  //     if (searchTerm) params.append('search', searchTerm);
+  //     if (activeTab === 'my') params.append('view', 'my');
+  //     if (activeTab === 'unassigned') params.append('view', 'unassigned');
+      
+  //     if (params.toString()) contactsUrl += `&${params.toString()}`;
+      
+  //     const [contactsResponse, agentsResponse] = await Promise.all([
+  //       fetch(contactsUrl),
+  //       fetch(`${API_URL}/api/agents`)
+  //     ]);
 
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load data");
-      } finally {
-        setLoading(false);
-      }
-    };
+  //     const contactsData = await contactsResponse.json();
+  //     const receivedContacts = Array.isArray(contactsData) ? contactsData : contactsData.contacts || [];
+  //     setContacts(receivedContacts);
+      
+  //     const agentsData = await agentsResponse.json();
+  //     if (!Array.isArray(agentsData)) {
+  //       throw new Error('Agents data is not in expected format');
+  //     }
+      
+  //     setAgents(agentsData);
+  //     setStats({
+  //       total: contactsData.totalCount || receivedContacts.length,
+  //       assigned: contactsData.assignedCount || receivedContacts.filter(c => c.assigned_to).length,
+  //       unassigned: contactsData.unassignedCount || receivedContacts.filter(c => !c.assigned_to).length
+  //     });
+
+  //   } catch (error) {
+  //     console.error("Error fetching data:", error);
+  //     toast.error("Failed to load data");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Function to fetch random contacts based on pageSize
+  const fetchData = async () => {
+  try {
+    setLoading(true);
     
+    let contactsUrl = `${API_URL}/api/contacts?page=${currentPage}&pageSize=${pageSize}`;
+    const params = new URLSearchParams();
+    
+    if (searchTerm) params.append('search', searchTerm);
+    if (activeTab === 'my') params.append('view', 'my');
+    
+    // 🔥 FIX: For unassigned tab, we only want leads with status = 'New' and not assigned
+    if (activeTab === 'unassigned') {
+      params.append('view', 'unassigned');
+      params.append('status', 'New'); // Only show leads with status 'New'
+    }
+    
+    if (params.toString()) contactsUrl += `&${params.toString()}`;
+    
+    const [contactsResponse, agentsResponse] = await Promise.all([
+      fetch(contactsUrl),
+      fetch(`${API_URL}/api/agents`)
+    ]);
+
+    const contactsData = await contactsResponse.json();
+    const receivedContacts = Array.isArray(contactsData) ? contactsData : contactsData.contacts || [];
+    
+    // 🔥 Additional filter on frontend to ensure only 'New' status shows in unassigned tab
+    let filteredContacts = receivedContacts;
+    if (activeTab === 'unassigned') {
+      filteredContacts = receivedContacts.filter(contact => contact.status === 'New' && !contact.assigned_to);
+    }
+    
+    setContacts(filteredContacts);
+    
+    const agentsData = await agentsResponse.json();
+    if (!Array.isArray(agentsData)) {
+      throw new Error('Agents data is not in expected format');
+    }
+    
+    setAgents(agentsData);
+    setStats({
+      total: contactsData.totalCount || receivedContacts.length,
+      assigned: contactsData.assignedCount || receivedContacts.filter(c => c.assigned_to).length,
+      unassigned: contactsData.unassignedCount || receivedContacts.filter(c => !c.assigned_to && c.status === 'New').length
+    });
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    toast.error("Failed to load data");
+  } finally {
+    setLoading(false);
+  }
+};
+  const fetchRandomContacts = async () => {
+    try {
+      setRandomLoading(true);
+      setRandomMode(true);
+      
+      // Build URL with filters - fetch more to have enough for randomization
+      // Fetch 5000 or all available (whichever is smaller) to ensure good randomization
+      const fetchSize = Math.min(5000, 10000); // Cap at 5000 for performance
+      let url = `${API_URL}/api/contacts?page=1&pageSize=${fetchSize}`;
+      const params = new URLSearchParams();
+      
+      if (searchTerm) params.append('search', searchTerm);
+      if (activeTab === 'unassigned') params.append('view', 'unassigned');
+      
+      if (params.toString()) url += `&${params.toString()}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      const allContacts = data.contacts || [];
+      
+      if (allContacts.length === 0) {
+        toast.info("No contacts found to randomize");
+        setRandomMode(false);
+        return;
+      }
+      
+      // Shuffle array using Fisher-Yates algorithm
+      const shuffled = [...allContacts];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      
+      // Take number of contacts based on pageSize
+      const numberOfContacts = Math.min(pageSize, shuffled.length);
+      const selected = shuffled.slice(0, numberOfContacts);
+      setRandomContacts(selected);
+      
+      toast.success(`Showing ${numberOfContacts} random contacts out of ${allContacts.length}`);
+      
+    } catch (error) {
+      console.error("Error fetching random contacts:", error);
+      toast.error("Failed to get random contacts");
+      setRandomMode(false);
+    } finally {
+      setRandomLoading(false);
+    }
+  };
+
+  // Function to reset to normal view
+  const resetToNormal = () => {
+    setRandomMode(false);
+    setRandomContacts([]);
     fetchData();
-  }, [searchTerm, activeTab, pageSize, currentPage]);
+  };
 
   const handleRedirect = () => {
     navigate('/changeleads');
   };
-  // Contact CRUD operations
+
   const handleCreateContacts = async (e) => {
-  e.preventDefault();
-  try {
-    // Prepare all contacts for submission
-    const contactsToSubmit = contactsBatch.map(contact => ({
-      name: contact.name,
-      email: contact.email,
-      phone: JSON.stringify(contact.phone.filter(p => p !== "")),
-      leadOwner: contact.leadOwner,
-      author: contact.author,
-      publisher: contact.publisher,
-      bookTitle: contact.book
-    })).filter(contact => contact.name.trim() !== ""); // Only submit contacts with names
+    e.preventDefault();
+    try {
+      const contactsToSubmit = contactsBatch.map(contact => ({
+        name: contact.name,
+        email: contact.email,
+        phone: JSON.stringify(contact.phone.filter(p => p !== "")),
+        leadOwner: contact.leadOwner,
+        author: contact.author,
+        publisher: contact.publisher,
+        bookTitle: contact.book
+      })).filter(contact => contact.name.trim() !== "");
 
-    if (contactsToSubmit.length === 0) {
-      throw new Error("No valid contacts to create");
+      if (contactsToSubmit.length === 0) {
+        throw new Error("No valid contacts to create");
+      }
+
+      const response = await fetch(`${API_URL}/api/contacts/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactsToSubmit)
+      });
+      
+      if (!response.ok) throw new Error(await response.text());
+      
+      toast.success(`Successfully created ${contactsToSubmit.length} contacts!`);
+      setShowCreateModal(false);
+      setContactsBatch([{
+        name: "", email: "", phone: [""], leadOwner: "",
+        author: "", publisher: "", book: ""
+      }]);
+      refreshContacts();
+    } catch (error) {
+      toast.error(error.message);
     }
+  };
 
-    const response = await fetch(`${API_URL}/api/contacts/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(contactsToSubmit)
-    });
+  const handleContactChange = (index, field, value) => {
+    const updatedBatch = [...contactsBatch];
+    updatedBatch[index] = {
+      ...updatedBatch[index],
+      [field]: value
+    };
+    setContactsBatch(updatedBatch);
+  };
+
+  const handlePhoneChange = (contactIndex, phoneIndex, value) => {
+    const updatedBatch = [...contactsBatch];
+    let updatedPhones = [...updatedBatch[contactIndex].phone];
     
-    if (!response.ok) throw new Error(await response.text());
+    updatedPhones[phoneIndex] = value;
     
-    toast.success(`Successfully created ${contactsToSubmit.length} contacts!`);
-    setShowCreateModal(false);
-    setContactsBatch([{
+    if (phoneIndex === updatedPhones.length - 1 && value.trim() !== "") {
+      updatedPhones.push("");
+    }
+    
+    updatedPhones = updatedPhones.filter((p, i) => 
+      p.trim() !== "" || i === updatedPhones.length - 1
+    );
+    
+    updatedBatch[contactIndex] = {
+      ...updatedBatch[contactIndex],
+      phone: updatedPhones
+    };
+    
+    setContactsBatch(updatedBatch);
+  };
+
+  const addNewContact = () => {
+    setContactsBatch([...contactsBatch, {
       name: "", email: "", phone: [""], leadOwner: "",
       author: "", publisher: "", book: ""
     }]);
-    refreshContacts();
-  } catch (error) {
-    toast.error(error.message);
-  }
-};
-
-const handleContactChange = (index, field, value) => {
-  const updatedBatch = [...contactsBatch];
-  updatedBatch[index] = {
-    ...updatedBatch[index],
-    [field]: value
   };
-  setContactsBatch(updatedBatch);
-};
 
-const handlePhoneChange = (contactIndex, phoneIndex, value) => {
-  const updatedBatch = [...contactsBatch];
-  let updatedPhones = [...updatedBatch[contactIndex].phone];
-  
-  updatedPhones[phoneIndex] = value;
-  
-  // Add new empty field if editing last one
-  if (phoneIndex === updatedPhones.length - 1 && value.trim() !== "") {
-    updatedPhones.push("");
-  }
-  
-  // Remove empty fields except last one
-  updatedPhones = updatedPhones.filter((p, i) => 
-    p.trim() !== "" || i === updatedPhones.length - 1
-  );
-  
-  updatedBatch[contactIndex] = {
-    ...updatedBatch[contactIndex],
-    phone: updatedPhones
+  const removeContact = (index) => {
+    if (contactsBatch.length <= 1) return;
+    const updatedBatch = [...contactsBatch];
+    updatedBatch.splice(index, 1);
+    setContactsBatch(updatedBatch);
   };
-  
-  setContactsBatch(updatedBatch);
-};
-
-const addNewContact = () => {
-  setContactsBatch([...contactsBatch, {
-    name: "", email: "", phone: [""], leadOwner: "",
-    author: "", publisher: "", book: ""
-  }]);
-};
-
-const removeContact = (index) => {
-  if (contactsBatch.length <= 1) return;
-  const updatedBatch = [...contactsBatch];
-  updatedBatch.splice(index, 1);
-  setContactsBatch(updatedBatch);
-};
 
   const handleEditContact = async (e) => {
     e.preventDefault();
@@ -214,6 +1210,11 @@ const removeContact = (index) => {
       toast.success("Contact updated successfully!");
       setShowEditModal(false);
       refreshContacts();
+      
+      // If in random mode, refresh random contacts too
+      if (randomMode) {
+        fetchRandomContacts();
+      }
     } catch (error) {
       toast.error(error.message);
     }
@@ -236,101 +1237,80 @@ const removeContact = (index) => {
       setSelectedContacts([]);
       setSelectAll(false);
       refreshContacts();
+      
+      // If in random mode, refresh random contacts too
+      if (randomMode) {
+        fetchRandomContacts();
+      }
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  // Bulk operations
-  // const handleBulkAssign = async () => {
-  //   if (!selectedAgent) {
-  //     toast.error("Please select an agent first");
-  //     return;
-  //   }
-
-  //   try {
-  //     const response = await fetch(`${API_URL}/api/contacts/bulk-assign`, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         contactIds: selectedContacts,
-  //         assignedTo: selectedAgent
-  //       })
-  //     });
-      
-  //     if (!response.ok) throw new Error(await response.text());
-      
-  //     const result = await response.json();
-  //     toast.success(`${result.count} contacts assigned successfully!`);
-  //     setShowAssignModal(false);
-  //     setSelectedContacts([]);
-  //     setSelectAll(false);
-  //     refreshContacts();
-  //   } catch (error) {
-  //     toast.error(error.message);
-  //   }
-  // };
   const handleBulkAssign = async () => {
-  if (!selectedAgent) {
-    alert("Please select an agent first");
-    return;
-  }
+    if (!selectedAgent) {
+      alert("Please select an agent first");
+      return;
+    }
 
-  try {
-    console.log('Sending bulk assign request:', {
-      contactIds: selectedContacts,
-      assignedTo: selectedAgent
-    });
-    
-    const response = await fetch(`${API_URL}/api/contacts/bulk-assign`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      console.log('Sending bulk assign request:', {
         contactIds: selectedContacts,
         assignedTo: selectedAgent
-      })
-    });
-    
-    console.log('Response status:', response.status);
-    
-    const responseText = await response.text();
-    console.log('Response text:', responseText);
-    
-    if (!response.ok) {
-      console.error('Response not OK:', responseText);
-      throw new Error(responseText);
-    }
-    
-    const result = JSON.parse(responseText);
-    console.log('Parsed result:', result);
-    
-    // ✅ BROWSER ALERT MESSAGES:
-    if (result.success === false) {
-      alert(`⚠️ ${result.message || 'All leads were already assigned to this agent.'}`);
-    } else {
-      const assignedCount = result.updatedCount || 0;
-      const skippedCount = result.skipped || 0;
+      });
       
-      if (assignedCount > 0 && skippedCount > 0) {
-        alert(`✅ ${assignedCount} lead(s) assigned successfully!\n${skippedCount} lead(s) were already assigned to this agent.`);
-      } else if (assignedCount > 0) {
-        alert(`✅ ${assignedCount} lead(s) assigned successfully!`);
-      } else {
-        alert(`⚠️ No leads were assigned. Please check selection.`);
+      const response = await fetch(`${API_URL}/api/contacts/bulk-assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactIds: selectedContacts,
+          assignedTo: selectedAgent
+        })
+      });
+      
+      console.log('Response status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      if (!response.ok) {
+        console.error('Response not OK:', responseText);
+        throw new Error(responseText);
       }
+      
+      const result = JSON.parse(responseText);
+      console.log('Parsed result:', result);
+      
+      if (result.success === false) {
+        alert(`⚠️ ${result.message || 'All leads were already assigned to this agent.'}`);
+      } else {
+        const assignedCount = result.updatedCount || 0;
+        const skippedCount = result.skipped || 0;
+        
+        if (assignedCount > 0 && skippedCount > 0) {
+          alert(`✅ ${assignedCount} lead(s) assigned successfully!\n${skippedCount} lead(s) were already assigned to this agent.`);
+        } else if (assignedCount > 0) {
+          alert(`✅ ${assignedCount} lead(s) assigned successfully!`);
+        } else {
+          alert(`⚠️ No leads were assigned. Please check selection.`);
+        }
+      }
+      
+      setShowAssignModal(false);
+      setSelectedContacts([]);
+      setSelectAll(false);
+      refreshContacts();
+      
+      // If in random mode, refresh random contacts too
+      if (randomMode) {
+        fetchRandomContacts();
+      }
+    } catch (error) {
+      console.error('Error in handleBulkAssign:', error);
+      alert(`❌ Error: ${error.message || 'Failed to assign leads'}`);
     }
-    
-    setShowAssignModal(false);
-    setSelectedContacts([]);
-    setSelectAll(false);
-    refreshContacts();
-  } catch (error) {
-    console.error('Error in handleBulkAssign:', error);
-    alert(`❌ Error: ${error.message || 'Failed to assign leads'}`);
-  }
-};
+  };
 
-  // Helper functions
   const refreshContacts = async () => {
     const response = await fetch(
       `${API_URL}/api/contacts?page=${currentPage}&pageSize=${pageSize}`
@@ -339,24 +1319,47 @@ const removeContact = (index) => {
     setContacts(data.contacts || data);
   };
 
+  // const toggleSelectAll = (e) => {
+  //   const currentContacts = randomMode ? randomContacts : contacts;
+  //   const isChecked = e.target.checked;
+  //   setSelectAll(isChecked);
+  //   setSelectedContacts(isChecked ? currentContacts.filter(c => !c.assigned_to).map(c => c.id) : []);
+  // };
+
   const toggleSelectAll = (e) => {
-    const isChecked = e.target.checked;
-    setSelectAll(isChecked);
-    setSelectedContacts(isChecked ? contacts.filter(c => !c.assigned_to).map(c => c.id) : []);
-  };
+  const currentContacts = randomMode ? randomContacts : contacts;
+  const isChecked = e.target.checked;
+  setSelectAll(isChecked);
+  // 🔥 Only select leads that are NOT assigned AND have status = 'New'
+  setSelectedContacts(isChecked ? currentContacts.filter(c => !c.assigned_to && c.status === 'New').map(c => c.id) : []);
+};
+
+  // const toggleContactSelection = (contactId) => {
+  //   const currentContacts = randomMode ? randomContacts : contacts;
+  //   const contact = currentContacts.find(c => c.id === contactId);
+  //   if (contact?.assigned_to) return;
+    
+  //   setSelectedContacts(prev => 
+  //     prev.includes(contactId) 
+  //       ? prev.filter(id => id !== contactId) 
+  //       : [...prev, contactId]
+  //   );
+  //   setSelectAll(false);
+  // };
 
   const toggleContactSelection = (contactId) => {
-    const contact = contacts.find(c => c.id === contactId);
-    if (contact?.assigned_to) return; // Skip if contact is already assigned
-    
-    setSelectedContacts(prev => 
-      prev.includes(contactId) 
-        ? prev.filter(id => id !== contactId) 
-        : [...prev, contactId]
-    );
-    setSelectAll(false);
-  };
-
+  const currentContacts = randomMode ? randomContacts : contacts;
+  const contact = currentContacts.find(c => c.id === contactId);
+  // 🔥 Only allow selection if not assigned AND status is 'New'
+  if (contact?.assigned_to || contact?.status !== 'New') return;
+  
+  setSelectedContacts(prev => 
+    prev.includes(contactId) 
+      ? prev.filter(id => id !== contactId) 
+      : [...prev, contactId]
+  );
+  setSelectAll(false);
+};
   const openEditModal = (contact) => {
     setContactToEdit({
       id: contact.id,
@@ -371,44 +1374,45 @@ const removeContact = (index) => {
     setShowEditModal(true);
   };
 
-  // Pagination component
   const PaginationControls = () => {
+    if (randomMode) return null; // No pagination in random mode
+    
     const totalPages = Math.ceil(stats.total / pageSize);
     
     return (
-      <div style={styles.pagination}>
-        <div style={styles.pageSizeControls}>
-          <span>Show: </span>
+      <div className="flex justify-between items-center mb-5">
+        <div className="flex items-center gap-1.5 text-sm">
+          <span>Show:</span>
           <select 
             value={pageSize} 
             onChange={(e) => {
               setPageSize(Number(e.target.value));
               setCurrentPage(1);
             }}
-            style={styles.pageSizeSelect}
+            className="p-1 border border-gray-300 rounded"
           >
-            {[10, 25, 50, 100, 500,1000, 2000].map(size => (
+            {[10, 25, 50, 100, 500, 1000, 2000].map(size => (
               <option key={size} value={size}>{size}</option>
             ))}
           </select>
-          <span> contacts per page</span>
+          <span>contacts per page</span>
         </div>
         
-        <div style={styles.pageNavigation}>
+        <div className="flex items-center gap-2.5">
           <button 
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            style={styles.pageButton}
+            className="p-1.5 px-2.5 bg-gray-100 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaChevronLeft size={12} />
           </button>
-          <span style={styles.pageInfo}>
+          <span className="text-xs">
             Page {currentPage} of {totalPages}
           </span>
           <button 
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            style={styles.pageButton}
+            className="p-1.5 px-2.5 bg-gray-100 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaChevronRight size={12} />
           </button>
@@ -417,183 +1421,270 @@ const removeContact = (index) => {
     );
   };
 
+  // Get current display contacts
+  const displayContacts = randomMode ? randomContacts : contacts;
+  const isLoading = randomMode ? randomLoading : loading;
+
   return (
-    <div style={styles.container}>
+    <div className="font-sans p-5 bg-gray-100 min-h-screen">
       {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.leftHeader}>
-        <div style={styles.left}>
-          <span style={styles.title}>Contacts</span>
-          <span style={styles.subtext}>
-            {stats.total} records ({stats.assigned} assigned, {stats.unassigned} unassigned)
-          </span>
-        </div>
-        <div style={styles.rightButtons}>
-          
-          <button style={styles.button} onClick={handleRedirect}>
-                Change Leads
-              </button>          
-          <button 
-            style={{ ...styles.button, ...styles.orangeBtn }}
-            onClick={() => setShowCreateModal(true)}
-          >
-            <FaPlus size={12} /> Create contact
-          </button>
-        </div>
+      <div className="flex justify-between items-center mb-5">
+        <div className="flex items-center gap-5 bg-[#0B79A1] p-2 rounded w-full justify-between p-2.5 text-white">
+          <div className="flex flex-col">
+            <span className="text-4xl font-bold mb-1">Contacts</span>
+            <span className="text-sm text-white">
+              {randomMode 
+                ? `Showing ${randomContacts.length} random contacts` 
+                : `${stats.total} records (${stats.assigned} assigned, ${stats.unassigned} unassigned)`
+              }
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <button 
+              className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm"
+              onClick={handleRedirect}
+            >
+              Change Leads
+            </button>          
+            <button 
+              className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35]"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <FaPlus size={12} /> Create contact
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={styles.tabs}>
+      <div className="flex border-b border-gray-300 mb-5">
         <div 
-          style={{ ...styles.tab, ...(activeTab === 'all' && styles.activeTab) }}
-          onClick={() => setActiveTab('all')}
+          className={`px-5 py-2.5 cursor-pointer border-b-2 text-sm ${
+            activeTab === 'all' ? 'border-[#ff6b35] font-bold' : 'border-transparent'
+          }`}
+          onClick={() => {
+            setActiveTab('all');
+            if (randomMode) resetToNormal();
+          }}
         >
           All contacts
         </div>
         <div 
-          style={{ ...styles.tab, ...(activeTab === 'unassigned' && styles.activeTab) }}
-          onClick={() => setActiveTab('unassigned')}
+          className={`px-5 py-2.5 cursor-pointer border-b-2 text-sm ${
+            activeTab === 'unassigned' ? 'border-[#ff6b35] font-bold' : 'border-transparent'
+          }`}
+          onClick={() => {
+            setActiveTab('unassigned');
+            if (randomMode) resetToNormal();
+          }}
         >
           Unassigned contacts
         </div>
-        
       </div>
 
+      {/* Search and Random Controls */}
+      <div className="flex flex-wrap gap-3 mb-5">
+        {/* Search Bar */}
+        <div className="relative flex-1 max-w-md">
+          <FaSearch className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search name, phone, email"
+            className="w-full p-2 pl-9 rounded border border-gray-300 text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
-      {/* Search Bar */}
-      <div style={styles.searchContainer}>
-        <FaSearch style={styles.searchIcon} />
-        <input
-          type="text"
-          placeholder="Search name, phone, email"
-          style={styles.searchBar}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        {/* Random Button */}
+        <div className="flex items-center gap-2">
+          {!randomMode ? (
+            <button
+              onClick={fetchRandomContacts}
+              disabled={randomLoading}
+              className="px-4 py-2 bg-purple-600 text-white rounded flex items-center gap-2 text-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaRandom className="text-sm" />
+              {randomLoading ? "Loading..." : `Show Random ${pageSize}`}
+            </button>
+          ) : (
+            <button
+              onClick={resetToNormal}
+              className="px-4 py-2 bg-gray-600 text-white rounded flex items-center gap-2 text-sm hover:bg-gray-700"
+            >
+              <FaTimes /> Back to Normal View
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Bulk Actions */}
-      {selectedContacts.length > 0 && (
-        <div style={styles.bulkActions}>
+      {/* {selectedContacts.length > 0 && (
+        <div className="flex items-center gap-2.5 mb-5 p-2.5 bg-gray-200 rounded text-sm">
           <span>{selectedContacts.length} unassigned contacts selected</span>
-          {contacts.some(c => c.assigned_to && selectedContacts.includes(c.id)) && (
-            <span style={{ color: '#999', marginLeft: 10 }}>
+          {displayContacts.some(c => c.assigned_to && selectedContacts.includes(c.id)) && (
+            <span className="text-gray-400 ml-2.5">
               (Assigned contacts cannot be selected)
             </span>
           )}
           <button 
-            style={styles.smallButton}
+            className="px-2.5 py-1 text-xs bg-[#00A550] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white"
             onClick={() => setShowAssignModal(true)}
           >
             <FaUser size={10} /> Assign to Agent
           </button>
-          
+        </div>
+      )} */}
+      {selectedContacts.length > 0 && (
+        <div className="flex items-center gap-2.5 mb-5 p-2.5 bg-gray-200 rounded text-sm">
+          <span>{selectedContacts.length} new contact(s) selected</span>
+          {contacts.some(c => c.assigned_to && selectedContacts.includes(c.id)) && (
+            <span className="text-gray-400 ml-2.5">
+              (Assigned contacts cannot be selected)
+            </span>
+          )}
+          {contacts.some(c => c.status !== 'New' && selectedContacts.includes(c.id)) && (
+            <span className="text-orange-500 ml-2.5">
+              (Contacted leads cannot be reassigned)
+            </span>
+          )}
+          <button 
+            className="px-2.5 py-1 text-xs bg-[#00A550] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white"
+            onClick={() => setShowAssignModal(true)}
+          >
+            <FaUser size={10} /> Assign to Agent
+          </button>
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination (only in normal mode) */}
       <PaginationControls />
 
       {/* Table */}
-      {loading ? (
-        <div style={styles.loading}>Loading contacts...</div>
+      {isLoading ? (
+        <div className="p-5 text-center text-gray-500">
+          {randomMode ? `Fetching ${pageSize} random contacts...` : "Loading contacts..."}
+        </div>
       ) : (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
+        <div className="bg-white rounded overflow-hidden shadow-sm">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th style={styles.th}>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
                   <input
                     type="checkbox"
                     checked={selectAll}
                     onChange={toggleSelectAll}
-                    style={styles.checkbox}
+                    className="cursor-pointer"
                   />
                 </th>
-                <th style={styles.th}>AUTHOR & LEAD OWNER</th>
-                {/* <th style={styles.th}>LEAD OWNER</th> */}
-                <th style={styles.th}>EMAIL & PHONE</th>
-                <th style={styles.th}>BOOK TITLE</th>
-                <th style={styles.th}>COMMENTS</th>
-                <th style={styles.th}>ACTIONS</th>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+                  AUTHOR & LEAD OWNER
+                </th>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+                  EMAIL & PHONE
+                </th>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+                  BOOK TITLE
+                </th>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+                  STATUS
+                </th>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+                  COMMENTS
+                </th>
+                <th className="p-2.5 text-left bg-[#0B79A1] border-b border-gray-300 font-bold text-sm text-white font-serif">
+                  ACTIONS
+                </th>
               </tr>
             </thead>
             <tbody>
-              {contacts.length > 0 ? (
-                contacts.map(contact => (
+              {displayContacts.length > 0 ? (
+                displayContacts.map(contact => (
                   <tr key={contact.id}>
-                    <td style={styles.td}>
+                    {/* <td className="p-2.5 border-b border-gray-300 text-sm">
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(contact.id)}
                         onChange={() => toggleContactSelection(contact.id)}
-                        style={styles.checkbox}
+                        className="cursor-pointer"
                         disabled={!!contact.assigned_to}
                         title={contact.assigned_to ? "Already assigned" : ""}
                       />
-                      {contact.assigned_to && <FaLock size={12} style={{ marginLeft: 5 }} />}
+                      {contact.assigned_to && <FaLock size={12} className="ml-1.5" />}
+                    </td> */}
+                    <td className="p-2.5 border-b border-gray-300 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedContacts.includes(contact.id)}
+                        onChange={() => toggleContactSelection(contact.id)}
+                        className="cursor-pointer"
+                        disabled={!!contact.assigned_to || contact.status !== 'New'}
+                        title={
+                          contact.assigned_to 
+                            ? "Already assigned" 
+                            : (contact.status !== 'New' 
+                                ? "Lead is in cooling period (already contacted)" 
+                                : "")
+                        }
+                      />
+                      {contact.assigned_to && <FaLock size={12} className="ml-1.5" />}
+                      {!contact.assigned_to && contact.status !== 'New' && (
+                        <span className="ml-1.5 text-xs text-orange-500" title="Cooling period">⏳</span>
+                      )}
                     </td>
-                    <td style={styles.td}>
+                    <td className="p-2.5 border-b border-gray-300 text-sm">
                       <div>
                         <div><strong>Author:</strong> {contact.name || '-'}</div>
-                        <div style={{marginTop: '4px', color: 'blue'}}><strong>Lead Owner:</strong> {contact.lead_owner || '-'}</div>
+                        <div className="mt-1 text-blue-600"><strong>Lead Owner:</strong> {contact.lead_owner || '-'}</div>
                       </div>
                     </td>
-                    {/* <td style={styles.td}>{contact.name || '-'}</td>
-                    <td style={styles.td}>{contact.lead_owner || '-'}</td> */}
-                    {/* <td style={styles.td}>{contact.email || '-'}</td> */}
-                    <td style={styles.td}>
-                    <div>
-                      <div>{contact.email || '-'}</div>
-                      <div style={{marginTop: '4px', fontSize: '0.9em', color: 'blue'}}>
-                        {(() => {
-                          try {
-                            const phones = JSON.parse(contact.phone);
-                            return Array.isArray(phones) ? phones.join(', ') : contact.phone;
-                          } catch {
-                            return contact.phone || '-';
-                          }
-                        })()}
+                    <td className="p-2.5 border-b border-gray-300 text-sm">
+                      <div>
+                        <div>{contact.email || '-'}</div>
+                        <div className="mt-1 text-sm text-blue-600">
+                          {(() => {
+                            try {
+                              const phones = JSON.parse(contact.phone);
+                              return Array.isArray(phones) ? phones.join(', ') : contact.phone;
+                            } catch {
+                              return contact.phone || '-';
+                            }
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                    <td
-                      style={{
-                        ...styles.td,
-                        maxWidth: '170px',
-                        wordBreak: 'break-word', // allow long words to break to the next line
-                        overflowWrap: 'break-word', // ensures wrapping on long words
-                        whiteSpace: 'normal' // allow text to wrap normally
-                      }}
-                    >
+                    </td>
+                    <td className="p-2.5 border-b border-gray-300 text-sm max-w-[170px] break-words overflow-wrap-break-word whitespace-normal">
                       {contact.book_title || '-'}
                     </td>
-
-                   
-                    {/* <td style={styles.td}>
-                      {(() => {
-                        try {
-                          const phones = JSON.parse(contact.phone);
-                          return Array.isArray(phones) ? phones.join(', ') : contact.phone;
-                        } catch {
-                          return contact.phone || '-';
-                        }
-                      })()}
-                    </td> */}
-                    <td style={styles.td}>{contact.comments || "-"}</td>
-
-
-                    <td style={styles.td}>
-                      <div style={{ display: 'flex', gap: '4px' }}>
+                    <td className="p-2.5 border-b border-gray-300 text-sm">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        contact.status === 'New' 
+                          ? 'bg-green-100 text-green-800' 
+                          : contact.status === 'Contacted'
+                          ? 'bg-blue-100 text-blue-800'
+                          : contact.status === 'In Progress'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : contact.status === 'Completed'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {contact.status || 'New'}
+                      </span>
+                    </td>
+                    <td className="p-2.5 border-b border-gray-300 text-sm">
+                      {contact.comments || "-"}
+                    </td>
+                    <td className="p-2.5 border-b border-gray-300 text-sm">
+                      <div className="flex gap-1">
                         <button 
-                          style={styles.smallButton}
+                          className="px-2.5 py-1 text-xs bg-[#00A550] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white"
                           onClick={() => openEditModal(contact)}
                         >
                           <FaPen size={10} /> Edit
                         </button>
                         <button 
-                          style={{ ...styles.smallButton, ...styles.deleteButton }}
+                          className="px-2.5 py-1 text-xs bg-[#ff4444] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-white border-[#ff4444]"
                           onClick={() => {
                             setContactToDelete(contact.id);
                             setShowDeleteModal(true);
@@ -607,7 +1698,7 @@ const removeContact = (index) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
+                  <td colSpan="7" className="text-center p-5">
                     No contacts found
                   </td>
                 </tr>
@@ -615,264 +1706,245 @@ const removeContact = (index) => {
             </tbody>
           </table>
         </div>
-        
       )}
       
-      <PaginationControls />
+      {/* Second Pagination (only in normal mode) */}
+      {!randomMode && <PaginationControls />}
 
       {/* Create Contact Modal */}
       {showCreateModal && (
-  <div style={styles.modalOverlay}>
-    <div style={{...styles.modal, width: '800px', maxHeight: '90vh', overflowY: 'auto'}}>
-      <div style={styles.modalHeader}>
-        <h3 style={styles.modalTitle}>Create Multiple Contacts</h3>
-        <button 
-          style={styles.closeButton}
-          onClick={() => setShowCreateModal(false)}
-        >
-          <FaTimes />
-        </button>
-      </div>
-      <form onSubmit={handleCreateContacts}>
-        {contactsBatch.map((contact, contactIndex) => (
-          <div key={contactIndex} style={{
-            marginBottom: '20px',
-            padding: '15px',
-            border: '1px solid #eee',
-            borderRadius: '5px',
-            position: 'relative'
-          }}>
-            <div style={{
-              position: 'absolute',
-              top: '5px',
-              right: '5px',
-              display: 'flex',
-              gap: '5px'
-            }}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded w-full max-w-2xl max-h-[90vh] overflow-y-auto text-black font-serif">
+            <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+              <h3 className="text-lg font-bold m-0">Create Multiple Contacts</h3>
               <button 
-                type="button"
-                onClick={() => removeContact(contactIndex)}
-                style={{
-                  background: '#ff4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '3px',
-                  padding: '2px 5px',
-                  cursor: 'pointer'
-                }}
-                disabled={contactsBatch.length <= 1}
+                className="bg-none border-none cursor-pointer text-base text-gray-500"
+                onClick={() => setShowCreateModal(false)}
               >
                 <FaTimes />
               </button>
             </div>
-            
-            <h4 style={{marginTop: '0', marginBottom: '15px'}}>Contact #{contactIndex + 1}</h4>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Name*</label>
-              <input
-                type="text"
-                style={styles.input}
-                value={contact.name}
-                onChange={(e) => handleContactChange(contactIndex, 'name', e.target.value)}
-                required
-              />
-            </div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Email</label>
-              <input
-                type="email"
-                style={styles.input}
-                value={contact.email}
-                onChange={(e) => handleContactChange(contactIndex, 'email', e.target.value)}
-              />
-            </div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Phone Numbers</label>
-              {contact.phone.map((phone, phoneIndex) => (
-                <div key={phoneIndex} style={{display: 'flex', alignItems: 'center', marginBottom: '5px'}}>
-                  <input
-                    type="tel"
-                    style={{...styles.input, flex: 1}}
-                    value={phone}
-                    onChange={(e) => handlePhoneChange(contactIndex, phoneIndex, e.target.value)}
-                    placeholder={`Phone #${phoneIndex + 1}`}
-                  />
-                  {phoneIndex !== contact.phone.length - 1 && (
+            <form onSubmit={handleCreateContacts}>
+              {contactsBatch.map((contact, contactIndex) => (
+                <div key={contactIndex} className="mb-5 p-4 border border-gray-200 rounded relative">
+                  <div className="absolute top-1 right-1 flex gap-1">
                     <button 
                       type="button"
-                      onClick={() => {
-                        const updatedBatch = [...contactsBatch];
-                        const updatedPhones = [...contact.phone];
-                        updatedPhones.splice(phoneIndex, 1);
-                        updatedBatch[contactIndex] = {
-                          ...contact,
-                          phone: updatedPhones
-                        };
-                        setContactsBatch(updatedBatch);
-                      }}
-                      style={{...styles.button, marginLeft: '5px', padding: '5px 10px'}}
+                      onClick={() => removeContact(contactIndex)}
+                      className="bg-[#ff4444] text-white border-none rounded px-1.5 py-0.5 cursor-pointer disabled:opacity-50"
+                      disabled={contactsBatch.length <= 1}
                     >
                       <FaTimes />
                     </button>
-                  )}
+                  </div>
+                  
+                  <h4 className="mt-0 mb-4">Contact #{contactIndex + 1}</h4>
+                  
+                  <div className="mb-5 px-0">
+                    <label className="block mb-1 text-sm font-bold">Name*</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+                      value={contact.name}
+                      onChange={(e) => handleContactChange(contactIndex, 'name', e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="mb-5 px-0">
+                    <label className="block mb-1 text-sm font-bold">Email</label>
+                    <input
+                      type="email"
+                      className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+                      value={contact.email}
+                      onChange={(e) => handleContactChange(contactIndex, 'email', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-5 px-0">
+                    <label className="block mb-1 text-sm font-bold">Phone Numbers</label>
+                    {contact.phone.map((phone, phoneIndex) => (
+                      <div key={phoneIndex} className="flex items-center mb-1">
+                        <input
+                          type="tel"
+                          className="flex-1 p-2 px-2.5 border border-gray-300 rounded text-sm"
+                          value={phone}
+                          onChange={(e) => handlePhoneChange(contactIndex, phoneIndex, e.target.value)}
+                          placeholder={`Phone #${phoneIndex + 1}`}
+                        />
+                        {phoneIndex !== contact.phone.length - 1 && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const updatedBatch = [...contactsBatch];
+                              const updatedPhones = [...contact.phone];
+                              updatedPhones.splice(phoneIndex, 1);
+                              updatedBatch[contactIndex] = {
+                                ...contact,
+                                phone: updatedPhones
+                              };
+                              setContactsBatch(updatedBatch);
+                            }}
+                            className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm ml-1.5 px-2.5 py-1"
+                          >
+                            <FaTimes />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mb-5 px-0">
+                    <label className="block mb-1 text-sm font-bold">Author</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+                      value={contact.author}
+                      onChange={(e) => handleContactChange(contactIndex, 'author', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-5 px-0">
+                    <label className="block mb-1 text-sm font-bold">Publisher</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+                      value={contact.publisher}
+                      onChange={(e) => handleContactChange(contactIndex, 'publisher', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-5 px-0">
+                    <label className="block mb-1 text-sm font-bold">Book Title</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
+                      value={contact.book}
+                      onChange={(e) => handleContactChange(contactIndex, 'book', e.target.value)}
+                    />
+                  </div>
                 </div>
               ))}
-            </div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Author</label>
-              <input
-                type="text"
-                style={styles.input}
-                value={contact.author}
-                onChange={(e) => handleContactChange(contactIndex, 'author', e.target.value)}
-              />
-            </div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Publisher</label>
-              <input
-                type="text"
-                style={styles.input}
-                value={contact.publisher}
-                onChange={(e) => handleContactChange(contactIndex, 'publisher', e.target.value)}
-              />
-            </div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Book Title</label>
-              <input
-                type="text"
-                style={styles.input}
-                value={contact.book}
-                onChange={(e) => handleContactChange(contactIndex, 'book', e.target.value)}
-              />
-            </div>
+              
+              <div className="mb-5">
+                <button 
+                  type="button"
+                  onClick={addNewContact}
+                  className="px-4 py-2 bg-[#4CAF50] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm"
+                >
+                  <FaPlus /> Add Another Contact
+                </button>
+              </div>
+              
+              <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
+                <button 
+                  type="button" 
+                  className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35]"
+                >
+                  Create {contactsBatch.length} Contacts
+                </button>
+              </div>
+            </form>
           </div>
-        ))}
-        
-        <div style={{marginBottom: '20px'}}>
-          <button 
-            type="button"
-            onClick={addNewContact}
-            style={{...styles.button, background: '#4CAF50'}}
-          >
-            <FaPlus /> Add Another Contact
-          </button>
         </div>
-        
-        <div style={styles.modalButtons}>
-          <button 
-            type="button" 
-            style={{ ...styles.button, marginRight: '10px' }}
-            onClick={() => setShowCreateModal(false)}
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            style={{ ...styles.button, ...styles.orangeBtn }}
-          >
-            Create {contactsBatch.length} Contacts
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
 
       {/* Edit Contact Modal */}
       {showEditModal && contactToEdit && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Edit Contact</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded w-full max-w-lg max-h-[90vh] overflow-y-auto text-black font-serif">
+            <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+              <h3 className="text-lg font-bold m-0">Edit Contact</h3>
               <button 
-                style={styles.closeButton}
+                className="bg-none border-none cursor-pointer text-base text-gray-500"
                 onClick={() => setShowEditModal(false)}
               >
                 <FaTimes />
               </button>
             </div>
             <form onSubmit={handleEditContact}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Name*</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Name*</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.name}
                   onChange={(e) => setContactToEdit({...contactToEdit, name: e.target.value})}
                   required
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Email</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Email</label>
                 <input
                   type="email"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.email}
                   onChange={(e) => setContactToEdit({...contactToEdit, email: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Phone</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Phone</label>
                 <input
                   type="tel"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.phone}
                   onChange={(e) => setContactToEdit({...contactToEdit, phone: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Lead Owner</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Lead Owner</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.leadOwner}
                   onChange={(e) => setContactToEdit({...contactToEdit, leadOwner: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Author</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Author</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.author}
                   onChange={(e) => setContactToEdit({...contactToEdit, author: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Publisher</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Publisher</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.publisher}
                   onChange={(e) => setContactToEdit({...contactToEdit, publisher: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Book Title</label>
+              <div className="mb-5 px-5">
+                <label className="block mb-1 text-sm font-bold">Book Title</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm"
                   value={contactToEdit.book}
                   onChange={(e) => setContactToEdit({...contactToEdit, book: e.target.value})}
                 />
               </div>
-              <div style={styles.modalButtons}>
+              <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
                 <button 
                   type="button" 
-                  style={{ ...styles.button, marginRight: '10px' }}
+                  className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
                   onClick={() => setShowEditModal(false)}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  style={{ ...styles.button, ...styles.orangeBtn }}
+                  className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35]"
                 >
                   Update Contact
                 </button>
@@ -884,20 +1956,20 @@ const removeContact = (index) => {
 
       {/* Assign Contacts Modal */}
       {showAssignModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Assign {selectedContacts.length} Contacts</h3>
-              <button onClick={() => setShowAssignModal(false)} style={styles.closeButton}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded w-full max-w-lg max-h-[90vh] overflow-y-auto text-black font-serif">
+            <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+              <h3 className="text-lg font-bold m-0">Assign {selectedContacts.length} Contacts</h3>
+              <button onClick={() => setShowAssignModal(false)} className="bg-none border-none cursor-pointer text-base text-gray-500">
                 <FaTimes />
               </button>
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Select Agent*</label>
+            <div className="mb-5 px-5">
+              <label className="block mb-1 text-sm font-bold">Select Agent*</label>
               <select
                 value={selectedAgent}
                 onChange={(e) => setSelectedAgent(e.target.value)}
-                style={styles.select}
+                className="w-full p-2 px-2.5 border border-gray-300 rounded text-sm bg-white"
                 required
               >
                 <option value="">-- Select Agent --</option>
@@ -908,17 +1980,17 @@ const removeContact = (index) => {
                 ))}
               </select>
             </div>
-            <div style={styles.modalButtons}>
+            <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
               <button 
                 type="button" 
-                style={{ ...styles.button, marginRight: '10px' }}
+                className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
                 onClick={() => setShowAssignModal(false)}
               >
                 Cancel
               </button>
               <button 
                 type="button" 
-                style={{ ...styles.button, ...styles.orangeBtn }}
+                className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm bg-[#ff6b35] text-white border-[#ff6b35] disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleBulkAssign}
                 disabled={!selectedAgent}
               >
@@ -931,37 +2003,37 @@ const removeContact = (index) => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded w-full max-w-lg max-h-[90vh] overflow-y-auto text-black font-serif">
+            <div className="p-4 px-5 border-b border-gray-300 flex justify-between items-center">
+              <h3 className="text-lg font-bold m-0">
                 Confirm Delete {Array.isArray(contactToDelete) ? `${contactToDelete.length} Contacts` : 'Contact'}
               </h3>
               <button 
-                style={styles.closeButton}
+                className="bg-none border-none cursor-pointer text-base text-gray-500"
                 onClick={() => setShowDeleteModal(false)}
               >
                 <FaTimes />
               </button>
             </div>
-            <div style={styles.modalContent}>
+            <div className="p-5">
               <p>
                 Are you sure you want to delete {Array.isArray(contactToDelete) 
                   ? `${contactToDelete.length} contacts` 
                   : 'this contact'}? This action cannot be undone.
               </p>
             </div>
-            <div style={styles.modalButtons}>
+            <div className="p-4 px-5 border-t border-gray-300 flex justify-end">
               <button 
                 type="button" 
-                style={{ ...styles.button, marginRight: '10px' }}
+                className="px-4 py-2 bg-[#f59133] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm mr-2.5"
                 onClick={() => setShowDeleteModal(false)}
               >
                 Cancel
               </button>
               <button 
                 type="button" 
-                style={{ ...styles.button, ...styles.deleteButton }}
+                className="px-4 py-2 bg-[#ff4444] border border-gray-300 rounded cursor-pointer flex items-center gap-1.5 text-sm text-white border-[#ff4444]"
                 onClick={handleDeleteContact}
               >
                 Confirm Delete
@@ -973,288 +2045,3 @@ const removeContact = (index) => {
     </div>
   );
 }
-
-// Styles (make sure to include these at the bottom of your file)
-const styles = {
-   container: {
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    padding: '20px',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-  leftHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-    backgroundColor: '#0B79A1', p: 2, borderRadius: 2,
-    justifyContent: 'space-between',
-    width: '100%',
-    padding: '10px',
-    color: 'white' ,
-    fontFamily: 'Times New Roman, Times, serif',
-    fontSize: '100px',
-  },
-
-  left: {
-    display: 'flex',
-    flexDirection: 'column',
-
-  },
-  title: {
-    fontSize: '40px',
-    fontWeight: 'bold',
-    marginBottom: '5px',
-  },
-  subtext: {
-    fontSize: '14px',
-    color: 'white',
-  },
-  rightButtons: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  lockText: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    fontSize: '14px',
-    color: '#666',
-  },
-  button: {
-    padding: '8px 16px',
-    backgroundColor: '#f59133',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    fontSize: '14px',
-  },
-  orangeBtn: {
-    backgroundColor: '#ff6b35',
-    color: 'white',
-    borderColor: '#ff6b35',
-  },
-  dropdownIcon: {
-    fontSize: '10px',
-    marginLeft: '5px',
-  },
-  tabs: {
-    display: 'flex',
-    borderBottom: '1px solid #ddd',
-    marginBottom: '20px',
-  },
-  tab: {
-    padding: '10px 20px',
-    cursor: 'pointer',
-    borderBottom: '2px solid transparent',
-    fontSize: '14px',
-  },
-  activeTab: {
-    borderBottom: '2px solid #ff6b35',
-    fontWeight: 'bold',
-  },
-  filters: {
-    display: 'flex',
-    gap: '20px',
-    fontSize: '14px',
-    color: '#666',
-    marginBottom: '20px',
-    alignItems: 'center',
-  },
-  searchContainer: {
-    position: 'relative',
-    marginBottom: '20px',
-    width: '100%',
-    maxWidth: '400px',
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: '10px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    color: '#999',
-  },
-  searchBar: {
-    width: '100%',
-    padding: '8px 10px 8px 35px',
-    borderRadius: '4px',
-    border: '1px solid #ddd',
-    fontSize: '14px',
-  },
-  bulkActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '20px',
-    padding: '10px',
-    backgroundColor: '#f0f0f0',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  smallButton: {
-    padding: '5px 10px',
-    fontSize: '10px',
-    backgroundColor: '#00A550',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    color: 'white',
-  },
-  deleteButton: {
-    backgroundColor: '#ff4444',
-    color: 'white',
-    borderColor: '#ff4444',
-  },
-  pagination: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-  pageSizeControls: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    fontSize: '14px',
-  },
-  pageSizeSelect: {
-    padding: '5px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-  },
-  pageNavigation: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  pageButton: {
-    padding: '5px 10px',
-    backgroundColor: '#f0f0f0',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  pageInfo: {
-    fontSize: '12px',
-  },
-  tableContainer: {
-    backgroundColor: 'white',
-    borderRadius: '4px',
-    overflow: 'hidden',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-  th: {
-    padding: '8px 11px',
-    textAlign: 'left',
-    backgroundColor: '#0B79A1',
-    borderBottom: '1px solid #ddd',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    color: 'white',
-    fontFamily: 'Times New Roman', 
-  },
-  td: {
-    padding: '8px 11px',
-    borderBottom: '1px solid #ddd',
-    fontSize: '14px',
-  },
-  checkbox: {
-    cursor: 'pointer',
-  },
-  loading: {
-    padding: '20px',
-    textAlign: 'center',
-    color: '#666',
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  modal: {
-    backgroundColor: 'white',
-    borderRadius: '4px',
-    width: '100%',
-    maxWidth: '500px',
-    maxHeight: '90vh',
-    overflowY: 'auto',
-    color: 'black' ,
-    fontFamily: 'Times New Roman',
-  },
-  modalHeader: {
-    padding: '15px 20px',
-    borderBottom: '1px solid #ddd',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    margin: 0,
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '16px',
-    color: '#666',
-  },
-  formGroup: {
-    marginBottom: '20px',
-    padding: '0 20px',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '5px',
-    fontSize: '14px',
-    fontWeight: 'bold',
-  },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    width: '100%',
-    padding: '8px 10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: 'white',
-  },
-  modalContent: {
-    padding: '20px',
-  },
-  modalButtons: {
-    padding: '15px 20px',
-    borderTop: '1px solid #ddd',
-    display: 'flex',
-    justifyContent: 'flex-end',
-  },
-};

@@ -59,9 +59,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://192.168.68.10:5173",
-  "https://nn6fwsg5-5173.asse.devtunnels.ms"
+  "http://localhost:5174",
+  "http://192.168.68.77:5174",
+  "https://nn6fwsg5-5174.asse.devtunnels.ms"
 ];
 
 app.use(

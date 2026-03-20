@@ -274,9 +274,9 @@ function Tasks() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [filePreviewURL, setFilePreviewURL] = useState(null);
 
-  const [pageInput, setPageInput] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 2000);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Script Viewer State
   const [showScriptViewer, setShowScriptViewer] = useState(false);
@@ -328,6 +328,17 @@ function Tasks() {
   const [editingBio, setEditingBio] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
 
+
+  // 🔥 Search handler
+  const handleSearch = () => {
+    setSearchTerm(searchInput);
+  };
+
+  // 🔥 Clear search handler
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchTerm('');
+  };
   // Queue processor
   const processRequestQueue = async () => {
     if (isProcessingQueue.current || requestQueue.current.length === 0) return;
@@ -899,14 +910,14 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }
   };
 
-  const handleStatusChangeWithConfirmation = (id, newStatus) => {
-    if (['Completed', 'Contacted', 'Closed'].includes(newStatus)) {
-      setPendingStatusChange({ id, newStatus });
-      setShowCompleteModal(true);
-    } else {
-      handleStatusUpdate(id, newStatus);
-    }
-  };
+  // const handleStatusChangeWithConfirmation = (id, newStatus) => {
+  //   if (['Completed', 'Contacted', 'Closed'].includes(newStatus)) {
+  //     setPendingStatusChange({ id, newStatus });
+  //     setShowCompleteModal(true);
+  //   } else {
+  //     handleStatusUpdate(id, newStatus);
+  //   }
+  // };
 
   const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -947,7 +958,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
           </div>
         </div>
 
-        <div className="flex gap-3 mb-6 items-center flex-wrap">
+        {/* <div className="flex gap-3 mb-6 items-center flex-wrap">
           <input
             type="text"
             placeholder="Search contacts..."
@@ -958,6 +969,36 @@ Please format the response in a clear, organized way with sections for Amazon Pr
           {searchTerm && (
             <button 
               onClick={() => setSearchTerm('')}
+              className="px-4.5 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg cursor-pointer text-sm transition-colors hover:bg-gray-200"
+            >
+              Clear
+            </button>
+          )}
+        </div> */}
+
+        {/* 🔥 Updated Search Section */}
+        <div className="flex gap-3 mb-6 items-center flex-wrap">
+          <input
+            type="text"
+            placeholder="Search contacts..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch();
+              }
+            }}
+            className="px-3.5 py-2.5 rounded-lg border border-gray-300 flex-1 max-w-md min-w-60 text-sm transition-colors focus:outline-none focus:border-blue-300"
+          />
+          <button 
+            onClick={handleSearch}
+            className="px-4.5 py-2.5 bg-blue-500 text-white border border-blue-500 rounded-lg cursor-pointer text-sm transition-colors hover:bg-blue-600"
+          >
+            Search
+          </button>
+          {(searchInput || searchTerm) && (
+            <button 
+              onClick={handleClearSearch}
               className="px-4.5 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg cursor-pointer text-sm transition-colors hover:bg-gray-200"
             >
               Clear
@@ -1038,14 +1079,14 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                 type="number"
                 min="1"
                 max={totalPages}
-                value={pageInput}
+                value={searchInput}
                 onChange={(e) => {
                   const value = Math.min(Math.max(1, parseInt(e.target.value) || 1), totalPages);
-                  setPageInput(value);
+                  setSearchInput(value);
                 }}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
-                    paginate(pageInput);
+                    paginate(searchInput);
                   }
                 }}
                 className="w-14 px-1 py-0.5 text-sm border border-gray-300 rounded text-center"
@@ -1069,7 +1110,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Name</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Contact</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Book Details</th>
-                <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Status</th>
+                {/* <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Status</th> */}
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Rating</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Transfer To</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Comment</th>
@@ -1159,7 +1200,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                       )}
                     </td>
                     
-                    <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
+                    {/* <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChangeWithConfirmation(lead.id, e.target.value)}
@@ -1171,7 +1212,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                         <option value="Contacted">Contacted</option>
                         <option value="Closed">Closed</option>
                       </select>
-                    </td>
+                    </td> */}
                     
                     <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       <select
@@ -1370,14 +1411,14 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                   type="number"
                   min="1"
                   max={totalPages}
-                  value={pageInput}
+                  value={searchInput}
                   onChange={(e) => {
                     const value = Math.min(Math.max(1, parseInt(e.target.value) || 1), totalPages);
-                    setPageInput(value);
+                    setSearchInput(value);
                   }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
-                      paginate(pageInput);
+                      paginate(searchInput);
                     }
                   }}
                   className="w-12 px-1.5 py-1 ml-1.5 text-center border border-gray-300 rounded text-sm"
@@ -1409,7 +1450,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                   {!editingBio && (
                     <button
                       onClick={() => setEditingBio(true)}
-                      className="px-2 py-1 bg-blue-500 text-white rounded text-xs flex items-center gap-1 hover:bg-blue-600"
+                      className="px-2 py-1 bg-blue-500 text-white rounded text-xs flex items-center gap-1 hover:bg-blue-600 ml-20"
                     >
                       <FaEdit size={12} /> Edit
                     </button>
@@ -1422,9 +1463,9 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                       setGeminiResearch('');
                       setGeminiError(null);
                     }}
-                    className="p-1.5 text-gray-500 hover:bg-gray-100 rounded"
+                    className="p-1.5 text-red-500 hover:bg-gray-100 rounded"
                   >
-                    <FaTimes size={16} />
+                    <FaTimes size={45} />
                   </button>
                 </div>
               </div>
@@ -1723,9 +1764,9 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                     setGeminiResearch('');
                     setGeminiError(null);
                   }}
-                  className="px-3 py-1.5 bg-gray-200 rounded text-xs hover:bg-gray-300 flex items-center gap-1"
+                  className="px-3 py-1.5 bg-red-200 rounded text-xs hover:bg-gray-300 flex items-center gap-1"
                 >
-                  <FaTimes size={12} /> Close
+                  <FaTimes size={32} /> Close
                 </button>
               </div>
             </div>

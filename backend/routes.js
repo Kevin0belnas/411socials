@@ -88,86 +88,86 @@ router.get('/current-agentID', async (req, res) => {
   }
 });
 
-router.get('/contacts', async (req, res) => {
-  const db = getDB();
-  try {
-    const { search, view, assignedTo, page = 1, pageSize = 10 } = req.query;
-    let query = 'SELECT * FROM contacts';
-    const params = [];
+// router.get('/contacts', async (req, res) => {
+//   const db = getDB();
+//   try {
+//     const { search, view, assignedTo, page = 1, pageSize = 10 } = req.query;
+//     let query = 'SELECT * FROM contacts';
+//     const params = [];
 
-    // WHERE clause filters
-    const whereClauses = [];
+//     // WHERE clause filters
+//     const whereClauses = [];
 
-    if (search) {
-      const searchTerm = `%${search.toLowerCase()}%`;
-      const normalizedSearch = search.replace(/[\s()+\-.]/g, ''); // digits-only version
+//     if (search) {
+//       const searchTerm = `%${search.toLowerCase()}%`;
+//       const normalizedSearch = search.replace(/[\s()+\-.]/g, ''); // digits-only version
 
-      const searchConditions = [
-        `LOWER(name) LIKE ?`,
-        `LOWER(email) LIKE ?`,
-        `LOWER(book_title) LIKE ?`
-      ];
-      const searchParams = [searchTerm, searchTerm, searchTerm];
+//       const searchConditions = [
+//         `LOWER(name) LIKE ?`,
+//         `LOWER(email) LIKE ?`,
+//         `LOWER(book_title) LIKE ?`
+//       ];
+//       const searchParams = [searchTerm, searchTerm, searchTerm];
 
-      // Add normalized phone search if input is numeric
-      if (/^\d+$/.test(normalizedSearch)) {
-        searchConditions.splice(2, 0, `
-          REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
-        `);
-        searchParams.splice(2, 0, `%${normalizedSearch}%`);
-      } else {
-        // Non-digit input, search phone normally
-        searchConditions.push(`phone LIKE ?`);
-        searchParams.push(searchTerm);
-      }
+//       // Add normalized phone search if input is numeric
+//       if (/^\d+$/.test(normalizedSearch)) {
+//         searchConditions.splice(2, 0, `
+//           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
+//         `);
+//         searchParams.splice(2, 0, `%${normalizedSearch}%`);
+//       } else {
+//         // Non-digit input, search phone normally
+//         searchConditions.push(`phone LIKE ?`);
+//         searchParams.push(searchTerm);
+//       }
 
-      whereClauses.push(`(${searchConditions.join(' OR ')})`);
-      params.push(...searchParams);
-    }
+//       whereClauses.push(`(${searchConditions.join(' OR ')})`);
+//       params.push(...searchParams);
+//     }
 
-    if (view === 'unassigned') {
-      whereClauses.push('assigned_to IS NULL');
-    } else if (view === 'my') {
-      whereClauses.push('assigned_to = ?');
-      params.push(1); // TODO: Replace with actual logged-in user ID
-    }
+//     if (view === 'unassigned') {
+//       whereClauses.push('assigned_to IS NULL');
+//     } else if (view === 'my') {
+//       whereClauses.push('assigned_to = ?');
+//       params.push(1); // TODO: Replace with actual logged-in user ID
+//     }
 
-    if (assignedTo) {
-      whereClauses.push('assigned_to = ?');
-      params.push(assignedTo);
-    }
+//     if (assignedTo) {
+//       whereClauses.push('assigned_to = ?');
+//       params.push(assignedTo);
+//     }
 
-    if (whereClauses.length > 0) {
-      query += ' WHERE ' + whereClauses.join(' AND ');
-    }
+//     if (whereClauses.length > 0) {
+//       query += ' WHERE ' + whereClauses.join(' AND ');
+//     }
 
-    // Total count query
-    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) AS total');
-    const [countRows] = await db.execute(countQuery, params);
-    const totalCount = countRows[0].total;
+//     // Total count query
+//     const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) AS total');
+//     const [countRows] = await db.execute(countQuery, params);
+//     const totalCount = countRows[0].total;
 
-    // Pagination
-    const safeLimit = Math.max(1, parseInt(pageSize) || 10);
-    const safeOffset = Math.max(0, (parseInt(page) - 1) * safeLimit || 0);
-    query += ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+//     // Pagination
+//     const safeLimit = Math.max(1, parseInt(pageSize) || 10);
+//     const safeOffset = Math.max(0, (parseInt(page) - 1) * safeLimit || 0);
+//     query += ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
-    const [rows] = await db.execute(query, params);
+//     const [rows] = await db.execute(query, params);
 
-    // Count assigned/unassigned from current results
-    const assignedCount = rows.filter(r => r.assigned_to).length;
-    const unassignedCount = rows.filter(r => !r.assigned_to).length;
+//     // Count assigned/unassigned from current results
+//     const assignedCount = rows.filter(r => r.assigned_to).length;
+//     const unassignedCount = rows.filter(r => !r.assigned_to).length;
 
-    res.json({
-      contacts: rows,
-      totalCount,
-      assignedCount,
-      unassignedCount
-    });
+//     res.json({
+//       contacts: rows,
+//       totalCount,
+//       assignedCount,
+//       unassignedCount
+//     });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 // router.get('/contacts', async (req, res) => {
 //   const db = getDB();
@@ -242,6 +242,182 @@ router.get('/contacts', async (req, res) => {
 
 
 // Get single contact
+// router.get('/contacts', async (req, res) => {
+//   const db = getDB();
+//   try {
+//     const { search, view, assignedTo, status, page = 1, pageSize = 10 } = req.query;
+//     let query = 'SELECT * FROM contacts';
+//     const params = [];
+
+//     // WHERE clause filters
+//     const whereClauses = [];
+
+//     if (search) {
+//       const searchTerm = `%${search.toLowerCase()}%`;
+//       const normalizedSearch = search.replace(/[\s()+\-.]/g, '');
+
+//       const searchConditions = [
+//         `LOWER(name) LIKE ?`,
+//         `LOWER(email) LIKE ?`,
+//         `LOWER(book_title) LIKE ?`
+//       ];
+//       const searchParams = [searchTerm, searchTerm, searchTerm];
+
+//       if (/^\d+$/.test(normalizedSearch)) {
+//         searchConditions.splice(2, 0, `
+//           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
+//         `);
+//         searchParams.splice(2, 0, `%${normalizedSearch}%`);
+//       } else {
+//         searchConditions.push(`phone LIKE ?`);
+//         searchParams.push(searchTerm);
+//       }
+
+//       whereClauses.push(`(${searchConditions.join(' OR ')})`);
+//       params.push(...searchParams);
+//     }
+
+//     // 🔥 FIX: Unassigned view - only show leads that are NOT assigned AND status = 'New'
+//     if (view === 'unassigned') {
+//       whereClauses.push('assigned_to IS NULL');
+//       whereClauses.push('status = "New"');
+//     } else if (view === 'my') {
+//       whereClauses.push('assigned_to = ?');
+//       params.push(req.session.userId || 1);
+//     }
+
+//     // Filter by status if provided
+//     if (status) {
+//       whereClauses.push('status = ?');
+//       params.push(status);
+//     }
+
+//     if (assignedTo) {
+//       whereClauses.push('assigned_to = ?');
+//       params.push(assignedTo);
+//     }
+
+//     if (whereClauses.length > 0) {
+//       query += ' WHERE ' + whereClauses.join(' AND ');
+//     }
+
+//     // Total count query
+//     const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) AS total');
+//     const [countRows] = await db.execute(countQuery, params);
+//     const totalCount = countRows[0].total;
+
+//     // Pagination
+//     const safeLimit = Math.max(1, parseInt(pageSize) || 10);
+//     const safeOffset = Math.max(0, (parseInt(page) - 1) * safeLimit || 0);
+//     query += ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+
+//     const [rows] = await db.execute(query, params);
+
+//     // Count assigned/unassigned from current results
+//     const assignedCount = rows.filter(r => r.assigned_to).length;
+//     const unassignedCount = rows.filter(r => !r.assigned_to && r.status === 'New').length;
+
+//     res.json({
+//       contacts: rows,
+//       totalCount,
+//       assignedCount,
+//       unassignedCount
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+router.get('/contacts', async (req, res) => {
+  const db = getDB();
+  try {
+    const { search, view, assignedTo, status, page = 1, pageSize = 10 } = req.query;
+    let query = 'SELECT * FROM contacts';
+    const params = [];
+
+    // WHERE clause filters
+    const whereClauses = [];
+
+    if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
+      const normalizedSearch = search.replace(/[\s()+\-.]/g, '');
+
+      const searchConditions = [
+        `LOWER(name) LIKE ?`,
+        `LOWER(email) LIKE ?`,
+        `LOWER(book_title) LIKE ?`
+      ];
+      const searchParams = [searchTerm, searchTerm, searchTerm];
+
+      if (/^\d+$/.test(normalizedSearch)) {
+        searchConditions.splice(2, 0, `
+          REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
+        `);
+        searchParams.splice(2, 0, `%${normalizedSearch}%`);
+      } else {
+        searchConditions.push(`phone LIKE ?`);
+        searchParams.push(searchTerm);
+      }
+
+      whereClauses.push(`(${searchConditions.join(' OR ')})`);
+      params.push(...searchParams);
+    }
+
+    // Unassigned view - only show leads that are NOT assigned AND status = 'New'
+    if (view === 'unassigned') {
+      whereClauses.push('assigned_to IS NULL');
+      whereClauses.push('status = "New"');
+    } else if (view === 'my') {
+      whereClauses.push('assigned_to = ?');
+      params.push(req.session.userId || 1);
+    }
+
+    // Filter by status if provided
+    if (status) {
+      whereClauses.push('status = ?');
+      params.push(status);
+    }
+
+    if (assignedTo) {
+      whereClauses.push('assigned_to = ?');
+      params.push(assignedTo);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    // 🔥 FIX: Add ORDER BY id DESC to show newest first
+    query += ' ORDER BY id DESC';
+
+    // Total count query
+    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) AS total');
+    const [countRows] = await db.execute(countQuery, params);
+    const totalCount = countRows[0].total;
+
+    // Pagination
+    const safeLimit = Math.max(1, parseInt(pageSize) || 10);
+    const safeOffset = Math.max(0, (parseInt(page) - 1) * safeLimit || 0);
+    query += ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+
+    const [rows] = await db.execute(query, params);
+
+    // Count assigned/unassigned from current results
+    const assignedCount = rows.filter(r => r.assigned_to).length;
+    const unassignedCount = rows.filter(r => !r.assigned_to && r.status === 'New').length;
+
+    res.json({
+      contacts: rows,
+      totalCount,
+      assignedCount,
+      unassignedCount
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/contacts/:id', async (req, res) => {
   const db = getDB();
   try {
@@ -668,12 +844,58 @@ router.get('/agents', async (req, res) => {
 
 // In your backend routes
 
+// router.post('/clear-leads', async (req, res) => {
+//   const db = getDB();
+//   const { agentId } = req.body;
+
+//   try {
+//     // First, get the IDs of leads to be cleared (excluding Flagged)
+//     const [rows] = await db.execute(
+//       `SELECT id FROM contacts 
+//        WHERE assigned_to = ? AND (rating IS NULL OR rating != 'Flagged')`,
+//       [agentId]
+//     );
+
+//     const leadIds = rows.map(row => row.id);
+//     if (leadIds.length === 0) {
+//       return res.json({ success: true, affectedRows: 0 });
+//     }
+
+//     // Mark removed_at in history
+//     const placeholders = leadIds.map(() => '?').join(',');
+//     await db.execute(
+//       `UPDATE assignment_history 
+//        SET removed_at = NOW() 
+//        WHERE agent_id = ? AND lead_id IN (${placeholders})`,
+//       [agentId, ...leadIds]
+//     );
+
+//     // Clear the leads
+//     const [result] = await db.execute(
+//       `UPDATE contacts 
+//        SET lead_owner = NULL, 
+//            assigned_to = NULL, 
+//            transferred_to = NULL,
+//            transferred_at = NULL,
+//            status = 'new', 
+//            rating = NULL
+//        WHERE assigned_to = ? AND (rating IS NULL OR rating != 'Flagged')`,
+//       [agentId]
+//     );
+
+//     res.json({ success: true, affectedRows: result.affectedRows });
+//   } catch (err) {
+//     console.error('Error clearing leads:', err);
+//     res.status(500).json({ error: 'Failed to clear leads' });
+//   }
+// });
+
 router.post('/clear-leads', async (req, res) => {
   const db = getDB();
   const { agentId } = req.body;
 
   try {
-    // First, get the IDs of leads to be cleared (excluding Flagged)
+    // Get leads assigned to this agent (excluding Flagged)
     const [rows] = await db.execute(
       `SELECT id FROM contacts 
        WHERE assigned_to = ? AND (rating IS NULL OR rating != 'Flagged')`,
@@ -681,30 +903,43 @@ router.post('/clear-leads', async (req, res) => {
     );
 
     const leadIds = rows.map(row => row.id);
+    
     if (leadIds.length === 0) {
-      return res.json({ success: true, affectedRows: 0 });
+      return res.json({ 
+        success: true, 
+        affectedRows: 0,
+        message: 'No leads to clear for this agent'
+      });
     }
 
-    // Mark removed_at in history
     const placeholders = leadIds.map(() => '?').join(',');
+    
+    // Update assignment_history - mark when removed
     await db.execute(
       `UPDATE assignment_history 
        SET removed_at = NOW() 
-       WHERE agent_id = ? AND lead_id IN (${placeholders})`,
+       WHERE agent_id = ? AND lead_id IN (${placeholders}) AND removed_at IS NULL`,
       [agentId, ...leadIds]
     );
-
-    // Clear the leads
-    const [result] = await db.execute(
+    
+    // Clear leads - status stays as 'Contacted' (not 'New')
+    await db.execute(
       `UPDATE contacts 
        SET lead_owner = NULL, 
            assigned_to = NULL,
-           comment = NULL
-       WHERE assigned_to = ? AND (rating IS NULL OR rating != 'Flagged')`,
-      [agentId]
+           transferred_to = NULL,
+           transferred_at = NULL,
+           rating = NULL
+       WHERE id IN (${placeholders})`,
+      leadIds
     );
 
-    res.json({ success: true, affectedRows: result.affectedRows });
+    res.json({ 
+      success: true, 
+      affectedRows: leadIds.length,
+      message: `Cleared ${leadIds.length} leads. Leads remain as 'Contacted' with cooling period.`
+    });
+    
   } catch (err) {
     console.error('Error clearing leads:', err);
     res.status(500).json({ error: 'Failed to clear leads' });
@@ -863,83 +1098,6 @@ router.use(async (req, res, next) => {
   next();
 });
 
-// router.post('/login', async (req, res) => {
-//   const db = getDB();
-//   console.log('\n=== NEW LOGIN ATTEMPT ===');
-//   console.log('Request received at:', new Date().toISOString());
-//   console.log('Email:', req.body.email);
-
-//   try {
-//     const { email, password } = req.body;
-
-//     // Basic validation
-//     if (!email || !password) {
-//       console.log('Validation failed - missing credentials');
-//       return res.status(400).json({ 
-//         error: 'Email and password are required',
-//         timestamp: new Date().toISOString()
-//       });
-//     }
-
-//     // Check if email is valid format
-//     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-//       return res.status(400).json({ error: 'Invalid email format' });
-//     }
-
-//     console.log('Querying database...');
-//     const [users] = await db.execute(
-//       'SELECT id, email, password, role FROM users WHERE email = ?',
-//       [email]  // Removed .trim() and .toLowerCase()
-//     );
-    
-//     if (users.length === 0) {
-//       console.log('User not found');
-//       return res.status(401).json({ error: 'Invalid credentials' });
-//     }
-    
-//     const user = users[0];
-    
-//     // Simple password comparison (in production, use bcrypt.compare())
-//     if (user.password !== password) {  // Removed .trim()
-//       console.log('Wrong password');
-//       return res.status(401).json({ error: 'Invalid credentials' });
-//     }
-    
-//     // Set session data
-//     req.session.userId = user.id;
-//     req.session.role = user.role;
-//     req.session.email = user.email;
-
-//     // Save session before sending response
-//     req.session.save(err => {
-//       if (err) {
-//         console.error('Session save error:', err);
-//         return res.status(500).json({ error: 'Session error' });
-//       }
-
-//       console.log('Login successful, session created');
-//       res.json({
-//         message: 'Login successful',
-//         user: {
-//           id: user.id,
-//           email: user.email,
-//           role: user.role
-//         }
-//       });
-//     });
-
-//   } catch (err) {
-//     console.error('SERVER ERROR:', {
-//       message: err.message,
-//       stack: err.stack,
-//       timestamp: new Date().toISOString()
-//     });
-//     res.status(500).json({ 
-//       error: 'Server error during login',
-//       timestamp: new Date().toISOString()
-//     });
-//   }
-// });
 
 router.get('/check-session', async (req, res) => {  // Added /api prefix
   if (req.session.userId) {
@@ -955,16 +1113,6 @@ router.get('/check-session', async (req, res) => {  // Added /api prefix
   res.json({ loggedIn: false });
 });
 
-// router.get('/check-session', async (req, res) => {
-//   if (req.session.user) {
-//     const { id, email, role } = req.session.user;
-//     return res.json({
-//       loggedIn: true,
-//       user: { id, email, role },
-//     });
-//   }
-//   res.json({ loggedIn: false });
-// });
 
 router.post('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -1001,25 +1149,30 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// Bulk assign contacts to agent
+
 // router.post('/contacts/bulk-assign', async (req, res) => {
 //   const db = getDB();
 //   try {
+//     console.log('Bulk assign request received:', req.body);
 //     const { contactIds, assignedTo } = req.body;
-//     console.log(contactIds, assignedTo);
-
+    
 //     if (!contactIds || !contactIds.length || !assignedTo) {
+//       console.log('Missing parameters');
 //       return res.status(400).json({ error: 'Contact IDs and Agent ID are required' });
 //     }
 
 //     // STEP 0: Get agent name
+//     console.log('Getting agent info for ID:', assignedTo);
 //     const [agentRows] = await db.execute('SELECT name FROM users WHERE id = ?', [assignedTo]);
 //     if (agentRows.length === 0) {
+//       console.log('Agent not found:', assignedTo);
 //       return res.status(404).json({ error: 'Assigned agent not found' });
 //     }
 //     const agentName = agentRows[0].name;
+//     console.log('Agent found:', agentName);
 
 //     // STEP 1: Filter out leads already assigned to this agent
+//     console.log('Checking assignment history for', contactIds.length, 'contacts');
 //     const idPlaceholders = contactIds.map(() => '?').join(',');
 //     const [historyRows] = await db.execute(
 //       `SELECT lead_id FROM assignment_history 
@@ -1028,17 +1181,23 @@ router.get('/stats', async (req, res) => {
 //     );
 
 //     const alreadyAssignedIds = historyRows.map(row => Number(row.lead_id));
+//     console.log('Already assigned IDs:', alreadyAssignedIds);
+    
 //     const filteredContactIds = contactIds.map(Number).filter(id => !alreadyAssignedIds.includes(id));
+//     console.log('Filtered contact IDs to assign:', filteredContactIds);
 
 //     if (filteredContactIds.length === 0) {
+//       console.log('All contacts already assigned');
 //       return res.status(200).json({
 //         success: false,
-//         message: 'All selected leads were already assigned to this agent before.',
-//         updatedCount: 0
+//         message: `All ${contactIds.length} selected leads were already assigned to this agent.`,
+//         updatedCount: 0,
+//         skipped: contactIds.length
 //       });
 //     }
 
 //     // STEP 2: Assign leads in contacts table
+//     console.log('Updating contacts table');
 //     const filteredPlaceholders = filteredContactIds.map(() => '?').join(',');
 //     const values = [assignedTo, agentName, ...filteredContactIds];
 //     const [updateResult] = await db.execute(
@@ -1047,42 +1206,47 @@ router.get('/stats', async (req, res) => {
 //        WHERE id IN (${filteredPlaceholders})`,
 //       values
 //     );
+//     console.log('Contacts updated:', updateResult.affectedRows);
 
-// // ✅ STEP 3: Insert new records into assignment_history
-// try {
-//   const historyValues = filteredContactIds.map(id => [
-//     parseInt(id), parseInt(assignedTo)
-//   ]);
+//     // STEP 3: Insert new records into assignment_history
+//     console.log('Inserting into assignment_history');
+//     try {
+//       const historyValues = filteredContactIds.map(id => [
+//         parseInt(id), parseInt(assignedTo)
+//       ]);
 
-//   console.log('About to insert into assignment_history:', historyValues);
+//       if (historyValues.length > 0) {
+//         const placeholders = historyValues.map(() => '(?, ?)').join(',');
+//         const flatValues = historyValues.flat();
 
-//   if (historyValues.length > 0) {
-//     const placeholders = historyValues.map(() => '(?, ?)').join(',');
-//     const flatValues = historyValues.flat();
+//         const [result] = await db.execute(
+//           `INSERT INTO assignment_history (lead_id, agent_id) VALUES ${placeholders}`,
+//           flatValues
+//         );
 
-//     const [result] = await db.execute(
-//       `INSERT INTO assignment_history (lead_id, agent_id) VALUES ${placeholders}`,
-//       flatValues
-//     );
+//         console.log('History insert success:', result.affectedRows, 'rows');
+//       }
+//     } catch (error) {
+//       console.error('INSERT ERROR:', error.message);
+//       // Don't throw here, just log
+//     }
 
-//     console.log('Insert success:', result);
-//   }
-// } catch (error) {
-//   console.error('INSERT ERROR:', error.message);
-// }
-
-
+//     console.log('Sending success response');
 //     res.json({
 //       success: true,
 //       updatedCount: updateResult.affectedRows,
-//       skipped: alreadyAssignedIds.length
+//       skipped: alreadyAssignedIds.length,
+//       message: `Successfully assigned ${updateResult.affectedRows} lead(s) to agent`
 //     });
 
 //   } catch (err) {
-//     console.error('Error in /contacts/bulk-assign:', err);
+//     console.error('Error in /contacts/bulk-assign:', err.message, err.stack);
 //     res.status(500).json({ error: err.message });
 //   }
 // });
+
+
+// POST route to save bio data
 
 router.post('/contacts/bulk-assign', async (req, res) => {
   const db = getDB();
@@ -1091,96 +1255,169 @@ router.post('/contacts/bulk-assign', async (req, res) => {
     const { contactIds, assignedTo } = req.body;
     
     if (!contactIds || !contactIds.length || !assignedTo) {
-      console.log('Missing parameters');
       return res.status(400).json({ error: 'Contact IDs and Agent ID are required' });
     }
 
-    // STEP 0: Get agent name
-    console.log('Getting agent info for ID:', assignedTo);
+    // Get agent name
     const [agentRows] = await db.execute('SELECT name FROM users WHERE id = ?', [assignedTo]);
     if (agentRows.length === 0) {
-      console.log('Agent not found:', assignedTo);
       return res.status(404).json({ error: 'Assigned agent not found' });
     }
     const agentName = agentRows[0].name;
-    console.log('Agent found:', agentName);
 
-    // STEP 1: Filter out leads already assigned to this agent
-    console.log('Checking assignment history for', contactIds.length, 'contacts');
     const idPlaceholders = contactIds.map(() => '?').join(',');
-    const [historyRows] = await db.execute(
-      `SELECT lead_id FROM assignment_history 
-       WHERE agent_id = ? AND lead_id IN (${idPlaceholders})`,
-      [assignedTo, ...contactIds]
-    );
-
-    const alreadyAssignedIds = historyRows.map(row => Number(row.lead_id));
-    console.log('Already assigned IDs:', alreadyAssignedIds);
     
-    const filteredContactIds = contactIds.map(Number).filter(id => !alreadyAssignedIds.includes(id));
-    console.log('Filtered contact IDs to assign:', filteredContactIds);
-
-    if (filteredContactIds.length === 0) {
-      console.log('All contacts already assigned');
-      return res.status(200).json({
+    // 🔥 Only assign leads that have status = 'New'
+    const [eligibleRows] = await db.execute(
+      `SELECT id FROM contacts 
+       WHERE id IN (${idPlaceholders}) 
+       AND status = 'New'
+       AND (rating IS NULL OR rating != 'Flagged')`,
+      contactIds
+    );
+    
+    const eligibleIds = eligibleRows.map(row => row.id);
+    
+    if (eligibleIds.length > 0) {
+      const eligiblePlaceholders = eligibleIds.map(() => '?').join(',');
+      const [existingAssignments] = await db.execute(
+        `SELECT lead_id FROM assignment_history 
+         WHERE agent_id = ? AND lead_id IN (${eligiblePlaceholders}) AND removed_at IS NULL`,
+        [assignedTo, ...eligibleIds]
+      );
+      
+      const alreadyAssignedIds = new Set(existingAssignments.map(row => row.lead_id));
+      
+      const assignableIds = eligibleIds.filter(id => !alreadyAssignedIds.has(Number(id)));
+      const alreadyAssigned = eligibleIds.filter(id => alreadyAssignedIds.has(Number(id)));
+      const nonNewIds = contactIds.filter(id => !eligibleRows.some(row => row.id === Number(id)));
+      
+      console.log('📊 Assignment breakdown:');
+      console.log(`   Assignable (New leads): ${assignableIds.length}`);
+      console.log(`   Already assigned: ${alreadyAssigned.length}`);
+      console.log(`   Not assignable (Contacted/Other): ${nonNewIds.length}`);
+      
+      if (assignableIds.length === 0) {
+        let message = '';
+        if (nonNewIds.length > 0) {
+          message = `${nonNewIds.length} lead(s) are already contacted and in cooling period. `;
+        }
+        if (alreadyAssigned.length > 0) {
+          message += `${alreadyAssigned.length} lead(s) are already assigned to this agent.`;
+        }
+        return res.status(200).json({
+          success: false,
+          message: message || 'No assignable leads found.',
+          updatedCount: 0,
+          nonNewLeads: nonNewIds.length,
+          alreadyAssigned: alreadyAssigned.length
+        });
+      }
+      
+      // 🔥 Assign leads - status becomes 'Contacted'
+      const assignablePlaceholders = assignableIds.map(() => '?').join(',');
+      const values = [assignedTo, agentName, ...assignableIds];
+      const [updateResult] = await db.execute(
+        `UPDATE contacts 
+         SET assigned_to = ?, 
+             lead_owner = ?,
+             status = 'Contacted'
+         WHERE id IN (${assignablePlaceholders})`,
+        values
+      );
+      
+      // 🔥 Insert into assignment_history - FIXED VERSION
+      if (assignableIds.length > 0) {
+        // Create placeholders for each lead: (?, ?)
+        const historyPlaceholders = assignableIds.map(() => '(?, ?)').join(',');
+        // Flatten the values: [lead_id1, agent_id, lead_id2, agent_id, ...]
+        const historyValues = assignableIds.flatMap(id => [parseInt(id), parseInt(assignedTo)]);
+        
+        console.log('Inserting into assignment_history:', {
+          count: assignableIds.length,
+          placeholders: historyPlaceholders,
+          values: historyValues
+        });
+        
+        await db.execute(
+          `INSERT INTO assignment_history (lead_id, agent_id) VALUES ${historyPlaceholders}`,
+          historyValues
+        );
+      }
+      
+      res.json({
+        success: true,
+        updatedCount: updateResult.affectedRows,
+        nonNewLeads: nonNewIds.length,
+        alreadyAssigned: alreadyAssigned.length,
+        message: `✅ Assigned ${updateResult.affectedRows} new lead(s) to ${agentName}. 
+                  ${nonNewIds.length} lead(s) were already contacted and cannot be reassigned. 
+                  ${alreadyAssigned.length} lead(s) already assigned to this agent.`
+      });
+      
+    } else {
+      res.json({
         success: false,
-        message: `All ${contactIds.length} selected leads were already assigned to this agent.`,
         updatedCount: 0,
-        skipped: contactIds.length
+        nonNewLeads: contactIds.length,
+        message: `No new leads found. ${contactIds.length} lead(s) are already contacted and in cooling period.`
       });
     }
-
-    // STEP 2: Assign leads in contacts table
-    console.log('Updating contacts table');
-    const filteredPlaceholders = filteredContactIds.map(() => '?').join(',');
-    const values = [assignedTo, agentName, ...filteredContactIds];
-    const [updateResult] = await db.execute(
-      `UPDATE contacts 
-       SET assigned_to = ?, lead_owner = ? 
-       WHERE id IN (${filteredPlaceholders})`,
-      values
-    );
-    console.log('Contacts updated:', updateResult.affectedRows);
-
-    // STEP 3: Insert new records into assignment_history
-    console.log('Inserting into assignment_history');
-    try {
-      const historyValues = filteredContactIds.map(id => [
-        parseInt(id), parseInt(assignedTo)
-      ]);
-
-      if (historyValues.length > 0) {
-        const placeholders = historyValues.map(() => '(?, ?)').join(',');
-        const flatValues = historyValues.flat();
-
-        const [result] = await db.execute(
-          `INSERT INTO assignment_history (lead_id, agent_id) VALUES ${placeholders}`,
-          flatValues
-        );
-
-        console.log('History insert success:', result.affectedRows, 'rows');
-      }
-    } catch (error) {
-      console.error('INSERT ERROR:', error.message);
-      // Don't throw here, just log
-    }
-
-    console.log('Sending success response');
-    res.json({
-      success: true,
-      updatedCount: updateResult.affectedRows,
-      skipped: alreadyAssignedIds.length,
-      message: `Successfully assigned ${updateResult.affectedRows} lead(s) to agent`
-    });
-
+    
   } catch (err) {
     console.error('Error in /contacts/bulk-assign:', err.message, err.stack);
     res.status(500).json({ error: err.message });
   }
 });
 
+// Optional: Move contacted leads back to New after cooling period
+router.post('/refresh-cooling-period', async (req, res) => {
+  const db = getDB();
+  const { days = 7 } = req.body; // Default 7 days cooling period
+  
+  try {
+    // Find leads that were cleared more than X days ago
+    const [expiredLeads] = await db.execute(
+      `SELECT DISTINCT c.id 
+       FROM contacts c
+       JOIN assignment_history ah ON c.id = ah.lead_id
+       WHERE c.status = 'Contacted'
+       AND c.assigned_to IS NULL
+       AND ah.removed_at IS NOT NULL
+       AND ah.removed_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+       GROUP BY c.id`,
+      [days]
+    );
+    
+    if (expiredLeads.length > 0) {
+      const leadIds = expiredLeads.map(row => row.id);
+      const placeholders = leadIds.map(() => '?').join(',');
+      
+      await db.execute(
+        `UPDATE contacts 
+         SET status = 'New'
+         WHERE id IN (${placeholders})`,
+        leadIds
+      );
+      
+      res.json({
+        success: true,
+        refreshedCount: leadIds.length,
+        message: `Moved ${leadIds.length} leads from Contacted back to New after ${days} days cooling period.`
+      });
+    } else {
+      res.json({
+        success: true,
+        refreshedCount: 0,
+        message: `No leads have exceeded ${days} days cooling period.`
+      });
+    }
+  } catch (err) {
+    console.error('Error refreshing cooling period:', err);
+    res.status(500).json({ error: 'Failed to refresh cooling period' });
+  }
+});
 
-// POST route to save bio data
 router.post('/leads/:id/bio', async (req, res) => {
   const db = getDB();
   const leadId = req.params.id;
@@ -1380,6 +1617,99 @@ router.get('/leads/:id/bio', async (req, res) => {
   }
 });
 
+// router.get('/contacts-agents', async (req, res) => {
+//   const db = getDB();
+
+//   try {
+//     const agentId = req.session.userId;
+//     if (!agentId) return res.status(401).json({ error: 'Unauthorized' });
+
+//     const page = parseInt(req.query.page) || 1;
+//     const pageSize = parseInt(req.query.pageSize) || 10;
+//     const offset = (page - 1) * pageSize;
+//     const search = (req.query.search || '').trim().toLowerCase();
+//     const filter = req.query.filter || 'all';
+
+//     let baseQuery = `
+//       SELECT * FROM contacts
+//       WHERE (assigned_to = ? OR transferred_to = ?)
+//     `;
+//     let countQuery = `
+//       SELECT COUNT(*) as total FROM contacts
+//       WHERE (assigned_to = ? OR transferred_to = ?)
+//     `;
+//     let baseParams = [agentId, agentId];
+//     let countParams = [agentId, agentId];
+
+//     // Add search condition
+//     if (search) {
+//       // Normalize input if digits (for phone search)
+//       const normalizedSearch = search.replace(/[\s()+\-.]/g, '');
+//       const likeSearch = `%${search}%`;
+
+//       const conditions = [
+//         `LOWER(name) LIKE ?`,
+//         `LOWER(email) LIKE ?`,
+//         `LOWER(book_title) LIKE ?`
+//       ];
+//       const searchParams = [likeSearch, likeSearch, likeSearch];
+
+//       // If digits, add phone number condition
+//       if (/^\d+$/.test(normalizedSearch)) {
+//         conditions.splice(2, 0, `
+//           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
+//         `);
+//         searchParams.splice(2, 0, `%${normalizedSearch}%`);
+//       }
+
+//       const searchCondition = `AND (${conditions.join(' OR ')})`;
+//       baseQuery += `\n${searchCondition}`;
+//       countQuery += `\n${searchCondition}`;
+
+//       baseParams.push(...searchParams);
+//       countParams.push(...searchParams);
+//     }
+
+//     // Add filter condition
+//     let filterCondition = '';
+//     if (filter === 'flagged') {
+//       filterCondition = ` AND rating = 'Flagged'`;
+//     } else if (filter === 'incomplete') {
+//       filterCondition = ` AND payment_status = 'incomplete'`;
+//     } else {
+//       filterCondition = `
+//         AND (payment_status IS NULL OR payment_status NOT IN ('incomplete', 'completed'))
+//         AND (rating IS NULL OR rating != 'Flagged')
+//       `;
+//     }
+
+//     baseQuery += filterCondition;
+//     countQuery += filterCondition;
+
+//     // Add pagination (note: not using params for LIMIT/OFFSET to avoid escaping issues)
+//     baseQuery += ` LIMIT ${pageSize} OFFSET ${offset}`;
+
+//     // Execute queries
+//     const [results] = await db.execute(baseQuery, baseParams);
+//     const [countResult] = await db.execute(countQuery, countParams);
+//     const totalItems = countResult[0].total;
+
+//     res.json({
+//       data: results,
+//       pagination: {
+//         totalItems,
+//         totalPages: Math.ceil(totalItems / pageSize),
+//         currentPage: page,
+//         pageSize
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Error:', error);
+//     res.status(500).json({ error: 'Failed to fetch contacts' });
+//   }
+// });
+
 router.get('/contacts-agents', async (req, res) => {
   const db = getDB();
 
@@ -1406,7 +1736,6 @@ router.get('/contacts-agents', async (req, res) => {
 
     // Add search condition
     if (search) {
-      // Normalize input if digits (for phone search)
       const normalizedSearch = search.replace(/[\s()+\-.]/g, '');
       const likeSearch = `%${search}%`;
 
@@ -1417,7 +1746,6 @@ router.get('/contacts-agents', async (req, res) => {
       ];
       const searchParams = [likeSearch, likeSearch, likeSearch];
 
-      // If digits, add phone number condition
       if (/^\d+$/.test(normalizedSearch)) {
         conditions.splice(2, 0, `
           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
@@ -1449,8 +1777,8 @@ router.get('/contacts-agents', async (req, res) => {
     baseQuery += filterCondition;
     countQuery += filterCondition;
 
-    // Add pagination (note: not using params for LIMIT/OFFSET to avoid escaping issues)
-    baseQuery += ` LIMIT ${pageSize} OFFSET ${offset}`;
+    // 🔥 FIX: Add ORDER BY id DESC to show newest first for agents
+    baseQuery += ` ORDER BY id DESC LIMIT ${pageSize} OFFSET ${offset}`;
 
     // Execute queries
     const [results] = await db.execute(baseQuery, baseParams);
@@ -1472,8 +1800,6 @@ router.get('/contacts-agents', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch contacts' });
   }
 });
-
-
 router.post('/contacts/:id/status', async (req, res) => {
   const db = getDB();
   const { id } = req.params;
@@ -1602,7 +1928,8 @@ router.put('/update-ratings/:id', async (req, res) => {
       query = `
         UPDATE contacts 
         SET rating = ?, 
-            rating_updated_at = NOW() 
+            rating_updated_at = NOW(),
+            status = 'Contacted'
         WHERE id = ?`;
       params = [rating, id];
     }
@@ -1849,300 +2176,6 @@ router.post('/create-transaction', upload.single("file"), async (req, res) => {
     });
   }
 });
-// router.post('/create-transaction', upload.single("file"), async (req, res) => {
-//   const db = getDB();
-//   const {
-//     lead_id,
-//     trans_status,
-//     service_name,
-//     amount_pay,
-//     payment_status,
-//     tot_service_price,
-//     remain_bal
-//   } = req.body;
-
-//   try {
-//     // Validate required fields
-//     if (!lead_id || isNaN(lead_id)) {
-//       return res.status(400).json({ error: 'Invalid lead ID' });
-//     }
-
-//     // Check if this is a follow-up payment
-//     const [existingPayments] = await db.execute(
-//       `SELECT * FROM service_transactions 
-//        WHERE transaction_id = ? 
-//        ORDER BY transaction_date DESC`,
-//       [lead_id]
-//     );
-
-//     const isFirstPayment = existingPayments.length === 0;
-//     const isSecondPayment = !isFirstPayment && 
-//                            existingPayments[0].payment_status === 'First Payment';
-
-//     // Validate payment sequence
-//     if (payment_status === 'Second Payment' && !isSecondPayment) {
-//       return res.status(400).json({ 
-//         error: 'Cannot make second payment without first payment',
-//         required: 'First Payment must be completed first'
-//       });
-//     }
-
-//     if (payment_status === 'First Payment' && !isFirstPayment) {
-//       return res.status(400).json({ 
-//         error: 'First payment already exists',
-//         existingPayment: existingPayments[0]
-//       });
-//     }
-
-//     // Calculate actual remaining balance
-//     let actualRemaining = parseFloat(remain_bal);
-//     if (!isFirstPayment) {
-//       const previousRemaining = parseFloat(existingPayments[0].remain_bal);
-//       actualRemaining = previousRemaining - parseFloat(amount_pay);
-      
-//       if (actualRemaining < 0) {
-//         return res.status(400).json({ 
-//           error: 'Payment exceeds remaining balance',
-//           maxAllowed: previousRemaining
-//         });
-//       }
-//     }
-
-//     // Convert service_name to string
-//     const servicesString = Array.isArray(service_name) 
-//       ? service_name.join(',') 
-//       : service_name;
-
-//     // Handle file upload
-//     let fileData = {
-//       filename: null,
-//       file_path: null,
-//       file_type: null
-//     };
-
-//     if (req.file) {
-//       fileData = {
-//         filename: req.file.originalname,
-//         file_path: `/uploads/${req.file.filename}`,
-//         file_type: path.extname(req.file.originalname)
-//       };
-//     }
-
-//     // Start transaction
-//     await db.beginTransaction();
-
-//     try {
-//       // Insert transaction record
-//       const [transactionResult] = await db.execute(
-//         `INSERT INTO service_transactions (
-//           transaction_id,
-//           trans_status,
-//           service_name,
-//           amount_pay,
-//           payment_status,
-//           tot_service_price,
-//           remain_bal,
-//           transaction_date,
-//           file_name,
-//           file_path,
-//           file_type
-//         ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
-//         [
-//           lead_id,
-//           trans_status,
-//           servicesString,
-//           amount_pay,
-//           payment_status,
-//           tot_service_price,
-//           actualRemaining,
-//           fileData.filename,
-//           fileData.file_path,
-//           fileData.file_type
-//         ]
-//       );
-
-//       // Update contact status based on payment
-//       let contactStatus = 'In Progress';
-//       let contactPaymentStatus = 'Incomplete';
-
-//       if (payment_status === 'Full Payment' || actualRemaining <= 0) {
-//         contactStatus = 'Completed';
-//         contactPaymentStatus = 'Completed';
-//       } else if (payment_status === 'Second Payment') {
-//         contactPaymentStatus = 'Second Payment';
-//       }
-
-//       await db.execute(
-//         `UPDATE service_transactions 
-//          SET status = ?,
-//          WHERE transaction_id = ?`,
-//         [contactPaymentStatus, lead_id]
-//       );
-
-//       await db.commit();
-
-//       res.json({
-//         success: true,
-//         message: 'Transaction processed successfully',
-//         transaction_id: transactionResult.insertId,
-//         remaining_balance: actualRemaining,
-//         next_step: actualRemaining > 0 ? 'Second payment needed' : 'Payment complete'
-//       });
-
-//     } catch (error) {
-//       await db.rollback();
-//       throw error;
-//     }
-
-//   } catch (error) {
-//     console.error('Transaction error:', error);
-//     res.status(500).json({ 
-//       error: 'Transaction processing failed',
-//       details: error.message
-//     });
-//   }
-// });
-// router.post('/create-transaction', upload.single("file"), async (req, res) => {
-//   const db = getDB();
-//   const {
-//     lead_id,
-//     trans_status,
-//     service_name,
-//     amount_pay,
-//     payment_status,
-//     tot_service_price,
-//     remain_bal
-//   } = req.body;
-
-//   try {
-//     // Validate required fields
-//     if (!lead_id || isNaN(lead_id)) {
-//       return res.status(400).json({ error: 'Invalid lead ID' });
-//     }
-
-//     if (!trans_status || !['Sold', 'Pending', 'Cancelled'].includes(trans_status)) {
-//       return res.status(400).json({ 
-//         error: 'Invalid transaction status',
-//         validValues: ['Sold', 'Pending', 'Cancelled']
-//       });
-//     }
-
-//     if (!service_name || service_name.length === 0) {
-//       return res.status(400).json({ error: 'At least one service must be selected' });
-//     }
-
-//     if (isNaN(amount_pay)) {
-//       return res.status(400).json({ error: 'Invalid amount paid' });
-//     }
-
-//     if (!payment_status || !['First Payment', 'Second Payment', 'Full Payment'].includes(payment_status)) {
-//       return res.status(400).json({ 
-//         error: 'Invalid payment status',
-//         validValues: ['First Payment', 'Second Payment', 'Full Payment']
-//       });
-//     }
-
-//     if (isNaN(tot_service_price)) {
-//       return res.status(400).json({ error: 'Invalid total service price' });
-//     }
-
-//     if (isNaN(remain_bal)) {
-//       return res.status(400).json({ error: 'Invalid remaining balance' });
-//     }
-
-//     // Convert service_name array to comma-separated string
-//     const servicesString = Array.isArray(service_name) ? service_name.join(',') : service_name;
-
-//     // Handle file upload
-//     let filename = null;
-//     let file_path = null;
-//     let file_type = null;
-
-//     if (req.file) {
-//       filename = req.file.originalname;
-//       file_path = `/uploads/${req.file.filename}`;
-//       file_type = path.extname(req.file.originalname);
-//     }
-
-//     // Start transaction
-//     await db.beginTransaction();
-
-//     try {
-//       // Insert into service_transactions
-//       const [transactionResult] = await db.execute(
-//         `INSERT INTO service_transactions (
-//           transaction_id,
-//           trans_status,
-//           service_name,
-//           amount_pay,
-//           payment_status,
-//           tot_service_price,
-//           remain_bal,
-//           transaction_date,
-//           file_name,
-//           file_path,
-//           file_type
-//         ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
-//         [
-//           lead_id,
-//           trans_status,
-//           servicesString,
-//           amount_pay,
-//           payment_status,
-//           tot_service_price,
-//           remain_bal,
-//           filename,
-//           file_path,
-//           file_type
-//         ]
-//       );
-
-//       // Optionally update the contact status if needed
-//       // if (trans_status === 'Sold') {
-//       //   await db.execute(
-//       //     `UPDATE contacts SET status = 'Completed' WHERE id = ?`,
-//       //     [lead_id]
-//       //   );
-//       // }
-
-//       if (payment_status === 'First Payment') {
-//         await db.execute(
-//           `UPDATE contacts SET payment_status = 'Incomplete', status = 'Incompleted' WHERE id = ?`,
-//           [lead_id]
-//         );
-//       }
-
-
-//       if (payment_status === 'Full Payment') {
-//         await db.execute(
-//           `UPDATE contacts SET status = 'Completed', payment_status = 'Completed' WHERE id = ?`,
-//           [lead_id]
-//         );
-//       }
-
-//       // Commit transaction
-//       await db.commit();
-
-//       res.json({
-//         success: true,
-//         message: 'Transaction created successfully',
-//         transaction_id: transactionResult.insertId
-//       });
-
-//     } catch (error) {
-//       // Rollback if any error occurs
-//       await db.rollback();
-//       throw error;
-//     }
-
-//   } catch (error) {
-//     console.error('Database error:', error);
-//     res.status(500).json({ 
-//       error: 'Failed to create transaction',
-//       details: error.message
-//     });
-//   }
-// });
 
 router.get('/transactions/:leadId', async (req, res) => {
   const db = getDB();
@@ -2180,8 +2213,6 @@ router.get('/transactions/:leadId', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch transactions', details: error.message });
   }
 });
-
-// Add these routes to your backend
 
 // Get fulfilled contacts
 router.get('/contacts-fullfilled', async (req, res) => {
