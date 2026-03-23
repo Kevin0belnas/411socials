@@ -13,356 +13,11 @@ import {
   FaMedal
 } from 'react-icons/fa';
 import { format } from 'date-fns';
- const API_URL = import.meta.env.VITE_API_URL;
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Fulfillment() {
-  // Styles
-  const styles = {
-    container: {
-      padding: '2rem',
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh',
-      fontFamily: "'Inter', sans-serif",
-    },
-    title: {
-      fontSize: '2.0rem',
-      marginBottom: '24px',
-      color: 'white',
-      fontWeight: 'bold',
-      backgroundColor: '#0B79A1',
-      padding: '30px',
-      borderRadius: '2px',
-      width: '100%',
-      boxSizing: 'border-box',
-      textAlign: 'left',
-      fontFamily: "'Times New Roman', Times, serif",
-    },
-    tableContainer: {
-      overflowX: 'auto',
-      borderRadius: '0rem',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      backgroundColor: 'white',
-    },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse',
-      minWidth: '800px',
-    },
-    th: {
-      padding: '1rem',
-      backgroundColor: '#0B79A1',
-      color: '#fff',
-      fontWeight: '600',
-      textAlign: 'left',
-      fontSize: '0.875rem',
-      letterSpacing: '0.03em',
-    },
-    td: {
-      padding: '1rem',
-      borderBottom: '1px solid #e2e8f0',
-      color: '#334155',
-      fontSize: '0.875rem',
-      verticalAlign: 'top',
-    },
-    contactLinksContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-    },
-    phoneLink: {
-      color: '#0ea5e9',
-      textDecoration: 'none',
-      fontWeight: '500',
-    },
-    emailLink: {
-      color: '#0ea5e9',
-      textDecoration: 'none',
-      fontWeight: '500',
-    },
-    loading: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '200px',
-      fontSize: '1rem',
-      color: '#64748b',
-    },
-    emptyState: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#64748b',
-    },
-    actionButton: {
-      backgroundColor: '#45b1e8',
-      color: 'white',
-      border: 'none',
-      padding: '8px 12px',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      fontSize: '0.8125rem',
-    },
-    modalOverlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      padding: '2rem',
-      borderRadius: '8px',
-      width: '80%',
-      maxWidth: '900px',
-      maxHeight: '80vh',
-      overflowY: 'auto',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    },
-    modalHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1.5rem',
-    },
-    modalTitle: {
-      fontSize: '1.5rem',
-      fontWeight: '600',
-      color: '#1f2937',
-    },
-    closeButton: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.25rem',
-      cursor: 'pointer',
-      color: '#64748b',
-    },
-    completeButton: {
-      backgroundColor: '#10b981',
-      color: 'white',
-      border: 'none',
-      padding: '8px 16px',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      marginTop: '12px',
-      fontWeight: '500',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      width: 'fit-content'
-    },
-    completeButtonDisabled: {
-      backgroundColor: '#9ca3af',
-      cursor: 'not-allowed',
-    },
-    confirmationModal: {
-      backgroundColor: 'white',
-      padding: '2rem',
-      borderRadius: '8px',
-      width: '500px',
-      maxWidth: '90%',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    },
-    confirmationContent: {
-      textAlign: 'center',
-      marginBottom: '1.5rem',
-    },
-    confirmationButtons: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      gap: '12px',
-      marginTop: '24px'
-    },
-    confirmButton: {
-      backgroundColor: '#10b981',
-      color: 'white',
-      border: 'none',
-      padding: '8px 16px',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500'
-    },
-    cancelButton: {
-      backgroundColor: '#ef4444',
-      color: 'white',
-      border: 'none',
-      padding: '8px 16px',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500'
-    },
-    warningIcon: {
-      color: '#f59e0b',
-      fontSize: '2rem',
-      marginBottom: '16px'
-    },
-    completionModal: {
-      backgroundColor: 'white',
-      padding: '2rem',
-      borderRadius: '8px',
-      width: '500px',
-      maxWidth: '90%',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    },
-    formGroup: {
-      marginBottom: '1rem',
-    },
-    formLabel: {
-      display: 'block',
-      marginBottom: '0.5rem',
-      fontWeight: '500',
-    },
-    formInput: {
-      width: '100%',
-      padding: '0.5rem',
-      border: '1px solid #e2e8f0',
-      borderRadius: '4px',
-      fontSize: '0.875rem',
-    },
-    formSelect: {
-      width: '100%',
-      padding: '0.5rem',
-      border: '1px solid #e2e8f0',
-      borderRadius: '4px',
-      fontSize: '0.875rem',
-      backgroundColor: 'white',
-    },
-    paymentSummary: {
-      backgroundColor: '#f1f5f9',
-      padding: '1rem',
-      borderRadius: '6px',
-      marginBottom: '1.5rem',
-    },
-    paymentSummaryItem: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginBottom: '0.5rem',
-    },
-    paymentSummaryLabel: {
-      fontWeight: '500',
-      color: '#64748b',
-    },
-    paymentSummaryValue: {
-      fontWeight: '600',
-    },
-    inputWithIcon: {
-      position: 'relative',
-    },
-    inputIcon: {
-      position: 'absolute',
-      left: '10px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      color: '#64748b',
-    },
-    inputField: {
-      width: '90%',
-      padding: '0.5rem 0.5rem 0.5rem 2rem',
-      border: '1px solid #e2e8f0',
-      borderRadius: '4px',
-      fontSize: '0.875rem',
-    },
-    errorMessage: {
-      color: '#ef4444',
-      fontSize: '0.75rem',
-      marginTop: '0.25rem',
-    },
-    // Create Contact Modal Styles
-    modal: {
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      width: '500px',
-      maxWidth: '90%',
-      maxHeight: '90vh',
-      overflowY: 'auto',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      padding: '20px',
-    },
-    
-    label: {
-      display: 'block',
-      marginBottom: '5px',
-      fontWeight: '500',
-      fontSize: '14px',
-    },
-    input: {
-      width: '100%',
-      padding: '8px 12px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '4px',
-      fontSize: '14px',
-    },
-    modalButtons: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      marginTop: '20px',
-    },
-    button: {
-      padding: '8px 16px',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '500',
-    },
-    orangeBtn: {
-      backgroundColor: '#f97316',
-      color: 'white',
-    },
-  };
-
-  const tranStyle = {
-    transactionContainer: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      padding: '20px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px',
-      marginBottom: '20px',
-      backgroundColor: 'white',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    transactionLeft: {
-      flex: 1,
-      marginRight: '20px',
-    },
-    transactionRight: {
-      width: '200px',
-      textAlign: 'center',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    transactionTable: {
-      width: '100%',
-      borderCollapse: 'collapse',
-    },
-    transactionTh: {
-      textAlign: 'left',
-      padding: '8px',
-      backgroundColor: '#f1f5f9',
-      color: '#334155',
-      fontWeight: '600',
-      borderBottom: '1px solid #e2e8f0',
-      width: '150px',
-    },
-    transactionTd: {
-      padding: '8px',
-      borderBottom: '1px solid #e2e8f0',
-      color: '#334155',
-    },
-  };
-
   // State
-  
   const [selectedLead, setSelectedLead] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [transactionLoading, setTransactionLoading] = useState(false);
@@ -389,6 +44,9 @@ function Fulfillment() {
     publisher: '',
     book: ''
   });
+
+  const [user, setUser] = useState(null);
+  const [ setIsAuthenticated] = useState(false);
 
   // Fetch leads on component mount
   useEffect(() => {
@@ -423,10 +81,7 @@ function Fulfillment() {
     fetchAssignedLeads();
   }, []);
 
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Add this useEffect to check session on component mount
+  // Check session
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -444,7 +99,6 @@ function Fulfillment() {
         }
       } catch (err) {
         console.error('Error checking session:', err);
-        console.log('User is not authenticated',isAuthenticated);
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -457,66 +111,63 @@ function Fulfillment() {
 
   // Handle create fulfillment contact
   const handleAddFulfillment = async (e) => {
-  e.preventDefault();
-  
-  if (!user || !user.id) {
-    alert('You must be logged in to create a fulfillment contact');
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/api/fulfilled-contacts`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...newContact,
-        userId: user.id  // Pass the logged-in user's ID
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to create fulfillment contact');
+    e.preventDefault();
+    
+    if (!user || !user.id) {
+      alert('You must be logged in to create a fulfillment contact');
+      return;
     }
 
-    const data = await response.json();
-    console.log('Fulfillment contact created:', data);
-    
-    // Update the leads state with the new contact
-    setLeads(prevLeads => [
-      ...prevLeads,
-      {
-        id: data.id,
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        status: data.status,
-        bookTitle: data.book_title || '-',
-        publisher: data.publisher || '-',
-        assigned_to: data.assigned_to
-      }
-    ]);
-    
-    // Close modal and reset form
-    setShowCreateModal(false);
-    setNewContact({
-      name: '',
-      email: '',
-      phone: '',
-      author: '',
-      publisher: '',
-      book: ''
-    });
-  } catch (error) {
-    console.error('Error creating fulfillment contact:', error);
-    alert(error.message);
-  }
-};
+    try {
+      const response = await fetch(`${API_URL}/api/fulfilled-contacts`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newContact,
+          userId: user.id
+        }),
+      });
 
-  // Fetch transactions when a lead is selected
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create fulfillment contact');
+      }
+
+      const data = await response.json();
+      
+      setLeads(prevLeads => [
+        ...prevLeads,
+        {
+          id: data.id,
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+          status: data.status,
+          bookTitle: data.book_title || '-',
+          publisher: data.publisher || '-',
+          assigned_to: data.assigned_to
+        }
+      ]);
+      
+      setShowCreateModal(false);
+      setNewContact({
+        name: '',
+        email: '',
+        phone: '',
+        author: '',
+        publisher: '',
+        book: ''
+      });
+    } catch (error) {
+      console.error('Error creating fulfillment contact:', error);
+      alert(error.message);
+    }
+  };
+
+  // Fetch transactions
   const fetchTransactions = async (leadId) => {
     try {
       setTransactionLoading(true);
@@ -536,10 +187,10 @@ function Fulfillment() {
     }
   };
 
-  // const handleViewTransactions = (lead) => {
-  //   setSelectedLead(lead);
-  //   fetchTransactions(lead.id);
-  // };
+  const handleViewTransactions = (lead) => {
+    setSelectedLead(lead);
+    fetchTransactions(lead.id);
+  };
 
   const handleCompleteClick = (transaction) => {
     setTransactionToComplete(transaction);
@@ -589,72 +240,61 @@ function Fulfillment() {
   };
 
   const handleSubmitCompletion = async () => {
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  try {
-    setCompletingTransaction(true);
+    try {
+      setCompletingTransaction(true);
 
-    // Optional: update status before sending if needed
-    paymentData.status = 'Second Payment'; // fixed typo
+      const payload = {
+        paymentAmount: paymentData.amount,
+        paymentStatus: paymentData.status,
+        paymentDate: paymentData.date,
+        transactionId: transactionToComplete.transaction_id,
+        authorName: selectedLead.name,
+        serviceName: transactionToComplete.service_name,
+        status: transactionToComplete.trans_status,
+        filePath: transactionToComplete.file_path,
+        fileName: transactionToComplete.file_name,
+        fileType: transactionToComplete.file_type,
+        totalPrice: transactionToComplete.tot_service_price,
+        remainingBalance: transactionToComplete.remain_bal,
+      };
 
-    const payload = {
-      paymentAmount: paymentData.amount,
-      paymentStatus: paymentData.status,
-      paymentDate: paymentData.date,
-      transactionId: transactionToComplete.transaction_id,
-      authorName: selectedLead.name,
-      serviceName: transactionToComplete.service_name,
-      status: transactionToComplete.trans_status,
-      filePath: transactionToComplete.file_path,
-      fileName: transactionToComplete.file_name,
-      fileType: transactionToComplete.file_type,
-      totalPrice: transactionToComplete.tot_service_price,
-      remainingBalance: transactionToComplete.remain_bal,
-    };
+      const response = await fetch(
+        `${API_URL}/api/complete-transaction/${transactionToComplete.transaction_id}`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
-    console.log('Payload being sent:', payload);
-    // console.log('status:', transactionToComplete.trans_status);
-
-    const response = await fetch(
-      `${API_URL}/api/complete-transaction/${transactionToComplete.transaction_id}`,
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to complete transaction');
       }
-    );
 
-    console.log('Response status:', response.status);
+      const result = await response.json();
+      setCompletionStatus(result);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Error response from server:', errorData);
-      throw new Error(errorData.error || 'Failed to complete transaction');
+      if (selectedLead) {
+        await fetchTransactions(selectedLead.id);
+      }
+
+      setTimeout(() => {
+        setShowCompletionModal(false);
+        setTransactionToComplete(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Error completing transaction:', error);
+      alert(error.message || 'Failed to complete transaction');
+    } finally {
+      setCompletingTransaction(false);
     }
-
-    const result = await response.json();
-    console.log('Response data:', result);
-    setCompletionStatus(result);
-
-    if (selectedLead) {
-      await fetchTransactions(selectedLead.id);
-    }
-
-    setTimeout(() => {
-      setShowCompletionModal(false);
-      setTransactionToComplete(null);
-    }, 2000);
-  } catch (error) {
-    console.error('Error completing transaction:', error);
-    alert(error.message || 'Failed to complete transaction');
-  } finally {
-    setCompletingTransaction(false);
-  }
-};
-
+  };
 
   const handleCloseCompletionModal = () => {
     setShowCompletionModal(false);
@@ -664,143 +304,99 @@ function Fulfillment() {
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <h1 style={styles.title}>Fulfillment</h1>
-        <div style={styles.loading}>Loading your leads...</div>
+      <div className="p-8 bg-slate-50 min-h-screen">
+        <h1 className="text-3xl font-bold text-white bg-[#0B79A1] p-8 rounded mb-6 font-serif">Fulfillment</h1>
+        <div className="flex justify-center items-center h-48 text-slate-500">Loading your leads...</div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div
-  style={{
-    backgroundColor: '#0B79A1',
-    padding: '30px',
-    borderRadius: '2px',
-    width: '100%',
-    boxSizing: 'border-box',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-  }}
->
-  <h1
-    style={{
-      fontSize: '2.0rem',
-      color: 'white',
-      fontWeight: 'bold',
-      fontFamily: "'Times New Roman', Times, serif",
-      margin: 0,
-    }}
-  >
-    Fulfillment
-  </h1>
-
-  <button
-    style={{
-      backgroundColor: '#f97316',
-      color: 'white',
-      border: 'none',
-      padding: '10px 15px',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontWeight: '500',
-    }}
-    onClick={() => setShowCreateModal(true)}
-  >
-    Add New Fulfillment
-  </button>
-</div>
-
-
+    <div className="p-8 bg-slate-50 min-h-screen font-sans">
+      {/* Header */}
+      <div className="bg-[#0B79A1] p-8 rounded mb-6 flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-white font-serif">Fulfillment</h1>
+        <button
+          className="bg-orange-500 text-white px-4 py-2 rounded font-medium hover:bg-orange-600 transition-colors"
+          onClick={() => setShowCreateModal(true)}
+        >
+          Add New Fulfillment
+        </button>
+      </div>
 
       {/* Create Fulfillment Modal */}
       {showCreateModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Create New Fulfillment</h3>
-              <button 
-                style={styles.closeButton}
-                onClick={() => setShowCreateModal(false)}
-              >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] max-w-[90%] max-h-[90vh] overflow-y-auto shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">Create New Fulfillment</h3>
+              <button className="bg-none border-none text-gray-500 hover:text-gray-700" onClick={() => setShowCreateModal(false)}>
                 <FaTimes />
               </button>
             </div>
             <form onSubmit={handleAddFulfillment}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Name*</label>
+              <div className="mb-4">
+                <label className="block mb-1 font-medium text-sm">Name*</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 border border-gray-200 rounded text-sm"
                   value={newContact.name}
                   onChange={(e) => setNewContact({...newContact, name: e.target.value})}
                   required
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Email</label>
+              <div className="mb-4">
+                <label className="block mb-1 font-medium text-sm">Email</label>
                 <input
                   type="email"
-                  style={styles.input}
+                  className="w-full p-2 border border-gray-200 rounded text-sm"
                   value={newContact.email}
                   onChange={(e) => setNewContact({...newContact, email: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Phone</label>
+              <div className="mb-4">
+                <label className="block mb-1 font-medium text-sm">Phone</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 border border-gray-200 rounded text-sm"
                   placeholder="Enter multiple numbers separated by commas"
                   value={newContact.phone}
                   onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
                 />
-                <small style={{ fontSize: '12px', color: '#888' }}>
-                  Separate multiple phone numbers with commas
-                </small>
+                <small className="text-xs text-gray-500">Separate multiple phone numbers with commas</small>
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Author</label>
+              <div className="mb-4">
+                <label className="block mb-1 font-medium text-sm">Author</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 border border-gray-200 rounded text-sm"
                   value={newContact.author}
                   onChange={(e) => setNewContact({...newContact, author: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Publisher</label>
+              <div className="mb-4">
+                <label className="block mb-1 font-medium text-sm">Publisher</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 border border-gray-200 rounded text-sm"
                   value={newContact.publisher}
                   onChange={(e) => setNewContact({...newContact, publisher: e.target.value})}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Book Title</label>
+              <div className="mb-4">
+                <label className="block mb-1 font-medium text-sm">Book Title</label>
                 <input
                   type="text"
-                  style={styles.input}
+                  className="w-full p-2 border border-gray-200 rounded text-sm"
                   value={newContact.book}
                   onChange={(e) => setNewContact({...newContact, book: e.target.value})}
                 />
               </div>
-              <div style={styles.modalButtons}>
-                <button 
-                  type="button" 
-                  style={{ ...styles.button, marginRight: '10px' }}
-                  onClick={() => setShowCreateModal(false)}
-                >
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="button" className="px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  style={{ ...styles.button, ...styles.orangeBtn }}
-                >
+                <button type="submit" className="px-4 py-2 bg-orange-500 text-white rounded text-sm hover:bg-orange-600">
                   Create Fulfillment
                 </button>
               </div>
@@ -808,46 +404,56 @@ function Fulfillment() {
           </div>
         </div>
       )}
-      <div style={styles.tableContainer}>
-        <table style={styles.table}>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded shadow-sm bg-white">
+        <table className="w-full min-w-[800px] border-collapse">
           <thead>
             <tr>
-              <th style={styles.th}>Name</th>
-              <th style={styles.th}>Contact</th>
-              <th style={styles.th}>Book Title</th>
-              <th style={styles.th}>Publisher</th>
-              <th style={styles.th}>Status</th>
-              {/* <th style={styles.th}>Actions</th> */}
+              <th className="p-4 bg-[#0B79A1] text-white font-semibold text-left text-sm">Name</th>
+              <th className="p-4 bg-[#0B79A1] text-white font-semibold text-left text-sm">Contact</th>
+              <th className="p-4 bg-[#0B79A1] text-white font-semibold text-left text-sm">Book Title</th>
+              <th className="p-4 bg-[#0B79A1] text-white font-semibold text-left text-sm">Publisher</th>
+              <th className="p-4 bg-[#0B79A1] text-white font-semibold text-left text-sm">Status</th>
+              <th className="p-4 bg-[#0B79A1] text-white font-semibold text-left text-sm">Actions</th>
             </tr>
           </thead>
           <tbody>
             {leads.length > 0 ? (
               leads.map((lead) => (
-                <tr key={lead.id}>
-                  <td style={styles.td}>{lead.name || '-'}</td>
-                  <td style={styles.td}>
-                    <div style={styles.contactLinksContainer}>
-                      <a href={`tel:${lead.phone.replace(/[^0-9+]/g, '')}`} style={styles.phoneLink}>
-                        {lead.phone || '-'}
-                      </a>
-                      <a href={`mailto:${lead.email}`} style={styles.emailLink}>
-                        {lead.email || '-'}
-                      </a>
+                <tr key={lead.id} className="hover:bg-gray-50">
+                  <td className="p-4 border-b border-gray-200 text-gray-700 text-sm align-top">{lead.name || '-'}</td>
+                  <td className="p-4 border-b border-gray-200 text-gray-700 text-sm align-top">
+                    <div className="flex flex-col gap-1">
+                      {lead.phone ? (
+                        <a href={`tel:${lead.phone.replace(/[^0-9+]/g, '')}`} className="text-blue-500 hover:text-blue-700 font-medium no-underline">
+                          {lead.phone}
+                        </a>
+                      ) : (
+                        <span className="text-blue-500">-</span>
+                      )}
+                      {lead.email ? (
+                        <a href={`mailto:${lead.email}`} className="text-blue-500 hover:text-blue-700 font-medium no-underline">
+                          {lead.email}
+                        </a>
+                      ) : (
+                        <span className="text-blue-500">-</span>
+                      )}
                     </div>
                   </td>
-                  <td style={styles.td}>{lead.bookTitle}</td>
-                  <td style={styles.td}>{lead.publisher}</td>
-                  <td style={styles.td}>{lead.status}</td>
-                  {/* <td style={styles.td}>
-                    <button style={styles.actionButton} onClick={() => handleViewTransactions(lead)}>
+                  <td className="p-4 border-b border-gray-200 text-gray-700 text-sm align-top">{lead.bookTitle}</td>
+                  <td className="p-4 border-b border-gray-200 text-gray-700 text-sm align-top">{lead.publisher}</td>
+                  <td className="p-4 border-b border-gray-200 text-gray-700 text-sm align-top">{lead.status}</td>
+                  <td className="p-4 border-b border-gray-200 text-gray-700 text-sm align-top">
+                    <button className="bg-blue-400 text-white px-3 py-1.5 rounded flex items-center gap-1.5 text-sm hover:bg-blue-500 transition-colors" onClick={() => handleViewTransactions(lead)}>
                       <FaEye /> View Transactions
                     </button>
-                  </td> */}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" style={styles.emptyState}>
+                <td colSpan="6" className="p-8 text-center text-gray-500">
                   No leads assigned to you currently
                 </td>
               </tr>
@@ -858,19 +464,17 @@ function Fulfillment() {
 
       {/* Transaction Details Modal */}
       {selectedLead && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>
-                Transactions for {selectedLead.name}
-              </h2>
-              <button style={styles.closeButton} onClick={() => setSelectedLead(null)}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[80%] max-w-[900px] max-h-[80vh] overflow-y-auto shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Transactions for {selectedLead.name}</h2>
+              <button className="bg-none border-none text-gray-500 hover:text-gray-700" onClick={() => setSelectedLead(null)}>
                 <FaTimes />
               </button>
             </div>
 
             {transactionLoading ? (
-              <div style={styles.loading}>Loading transactions...</div>
+              <div className="flex justify-center items-center h-48 text-gray-500">Loading transactions...</div>
             ) : transactions.length > 0 ? (
               <>
                 {transactions.map((transaction) => {
@@ -879,50 +483,42 @@ function Fulfillment() {
                   const isFirstPayment = transaction.status === 'Incomplete';
 
                   return (
-                    <div key={transaction.transID} style={tranStyle.transactionContainer}>
+                    <div key={transaction.transID} className="flex justify-between items-start p-5 border border-gray-200 rounded-lg mb-5 bg-white shadow-sm">
                       {/* Left - Transaction Info */}
-                      <div style={tranStyle.transactionLeft}>
-                        <table style={tranStyle.transactionTable}>
+                      <div className="flex-1 mr-5">
+                        <table className="w-full border-collapse">
                           <tbody>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Transaction ID:</th>
-                              <td style={tranStyle.transactionTd}>{transaction.transaction_id}</td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 w-36">Transaction ID:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">{transaction.transaction_id}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Status:</th>
-                              <td style={tranStyle.transactionTd}>{transaction.trans_status}</td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Status:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">{transaction.trans_status}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Services:</th>
-                              <td style={tranStyle.transactionTd}>{transaction.service_name}</td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Services:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">{transaction.service_name}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Amount Paid:</th>
-                              <td style={tranStyle.transactionTd}>
-                                ${parseFloat(transaction.amount_pay).toFixed(2)}
-                              </td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Amount Paid:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">${parseFloat(transaction.amount_pay).toFixed(2)}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Payment Status:</th>
-                              <td style={tranStyle.transactionTd}>{transaction.payment_status}</td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Payment Status:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">{transaction.payment_status}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Total Price:</th>
-                              <td style={tranStyle.transactionTd}>
-                                ${parseFloat(transaction.tot_service_price).toFixed(2)}
-                              </td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Total Price:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">${parseFloat(transaction.tot_service_price).toFixed(2)}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Remaining Balance:</th>
-                              <td style={tranStyle.transactionTd}>
-                                ${parseFloat(transaction.remain_bal).toFixed(2)}
-                              </td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Remaining Balance:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">${parseFloat(transaction.remain_bal).toFixed(2)}</td>
                             </tr>
                             <tr>
-                              <th style={tranStyle.transactionTh}>Date:</th>
-                              <td style={tranStyle.transactionTd}>
-                                {new Date(transaction.transaction_date).toLocaleDateString()}
-                              </td>
+                              <th className="text-left p-2 bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">Date:</th>
+                              <td className="p-2 border-b border-gray-200 text-gray-700">{new Date(transaction.transaction_date).toLocaleDateString()}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -930,7 +526,7 @@ function Fulfillment() {
                         {isFirstPayment && (
                           <button
                             onClick={() => handleCompleteClick(transaction)}
-                            style={styles.completeButton}
+                            className="mt-3 bg-green-500 text-white px-4 py-2 rounded font-medium flex items-center gap-1.5 hover:bg-green-600 transition-colors"
                           >
                             <FaCheck /> Complete Transaction
                           </button>
@@ -938,61 +534,42 @@ function Fulfillment() {
                       </div>
 
                       {/* Right - File Display */}
-                      <div style={tranStyle.transactionRight}>
+                      <div className="w-48 text-center flex items-center justify-center">
                         {filePath ? (
                           fileType === '.png' || fileType === '.jpg' || fileType === '.jpeg' ? (
-                            <div style={{ textAlign: 'center' }}>
+                            <div className="text-center">
                               <img
                                 src={`${API_URL}${filePath}`}
                                 alt={transaction.file_name}
-                                style={{
-                                  width: '200px',
-                                  height: '300px',
-                                  objectFit: 'contain',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  boxShadow: '0 0 4px rgba(0,0,0,0.1)',
-                                  display: 'block',
-                                  margin: '0 auto 0.5rem'
-                                }}
+                                className="w-48 h-72 object-contain border border-gray-200 rounded shadow-sm mx-auto mb-2"
                                 onError={(e) => {
                                   e.target.outerHTML = `
                                     <a href="${API_URL}${filePath}" 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      style="color: #3b82f6; text-decoration: underline;">
+                                      class="text-blue-500 underline">
                                       View File (Image failed to load)
                                     </a>`;
                                 }}
                               />
-                              <div style={{ fontSize: '0.9rem', color: '#475569' }}>
-                                {transaction.file_name}
-                              </div>
+                              <div className="text-sm text-gray-600">{transaction.file_name}</div>
                             </div>
                           ) : fileType === '.pdf' ? (
-                            <div style={{ textAlign: 'center', marginTop: '110px', marginLeft: '35px'}}>
+                            <div className="text-center">
                               <a
                                 href={`${API_URL}${filePath}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                  display: 'inline-block',
-                                  padding: '10px 15px',
-                                  backgroundColor: '#007BFF',
-                                  color: '#fff',
-                                  textDecoration: 'none',
-                                  borderRadius: '6px',
-                                  fontWeight: 'bold',
-                                }}
+                                className="inline-block px-4 py-2 bg-blue-500 text-white rounded font-bold no-underline hover:bg-blue-600 transition-colors"
                               >
-                                <FaFilePdf /> View PDF
+                                <FaFilePdf className="inline mr-1" /> View PDF
                               </a>
                             </div>
                           ) : (
-                            <span style={{ color: "#999" }}>Unsupported File Type</span>
+                            <span className="text-gray-400">Unsupported File Type</span>
                           )
                         ) : (
-                          <span style={{ color: "#999" }}>No File Attached</span>
+                          <span className="text-gray-400">No File Attached</span>
                         )}
                       </div>
                     </div>
@@ -1000,7 +577,7 @@ function Fulfillment() {
                 })}
               </>
             ) : (
-              <div style={styles.emptyState}>No transactions found for this lead</div>
+              <div className="p-8 text-center text-gray-500">No transactions found for this lead</div>
             )}
           </div>
         </div>
@@ -1008,29 +585,21 @@ function Fulfillment() {
 
       {/* Confirmation Modal */}
       {showConfirmation && transactionToComplete && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.confirmationModal}>
-            <div style={styles.confirmationContent}>
-              <FaExclamationTriangle style={styles.warningIcon} />
-              <h3 style={{ marginBottom: '12px', fontSize: '1.25rem' }}>
-                Complete Transaction #{transactionToComplete.transaction_id}?
-              </h3>
-              <p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] max-w-[90%] shadow-lg">
+            <div className="text-center mb-4">
+              <FaExclamationTriangle className="text-yellow-500 text-3xl mx-auto mb-3" />
+              <h3 className="text-xl font-semibold mb-2">Complete Transaction #{transactionToComplete.transaction_id}?</h3>
+              <p className="text-gray-600">
                 You are about to process the final payment for this transaction. 
                 The remaining balance is <strong>${parseFloat(transactionToComplete.remain_bal).toFixed(2)}</strong>.
               </p>
             </div>
-            <div style={styles.confirmationButtons}>
-              <button 
-                style={styles.cancelButton}
-                onClick={handleCancelComplete}
-              >
+            <div className="flex justify-end gap-3 mt-4">
+              <button className="px-4 py-2 bg-red-500 text-white rounded font-medium hover:bg-red-600" onClick={handleCancelComplete}>
                 Cancel
               </button>
-              <button 
-                style={styles.confirmButton}
-                onClick={handleConfirmComplete}
-              >
+              <button className="px-4 py-2 bg-green-500 text-white rounded font-medium flex items-center gap-1.5 hover:bg-green-600" onClick={handleConfirmComplete}>
                 <FaCheck /> Continue to Payment
               </button>
             </div>
@@ -1040,73 +609,50 @@ function Fulfillment() {
 
       {/* Completion/Payment Modal */}
       {showCompletionModal && transactionToComplete && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.completionModal}>
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>
-                Complete Transaction #{transactionToComplete.transaction_id}
-              </h2>
-              <button 
-                style={styles.closeButton} 
-                onClick={handleCloseCompletionModal}
-                disabled={completingTransaction}
-              >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] max-w-[90%] shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Complete Transaction #{transactionToComplete.transaction_id}</h2>
+              <button className="text-gray-500 hover:text-gray-700" onClick={handleCloseCompletionModal} disabled={completingTransaction}>
                 <FaTimes />
               </button>
             </div>
 
             {completionStatus ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <div style={{ 
-                  backgroundColor: '#10b981', 
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '80px',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1rem',
-                  fontSize: '2rem'
-                }}>
+              <div className="text-center py-8">
+                <div className="bg-green-500 text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 text-3xl">
                   <FaCheck />
                 </div>
-                <h3 style={{ marginBottom: '0.5rem' }}>Transaction Completed Successfully!</h3>
-                <p>The transaction has been marked as completed.</p>
+                <h3 className="text-lg font-semibold mb-1">Transaction Completed Successfully!</h3>
+                <p className="text-gray-600">The transaction has been marked as completed.</p>
               </div>
             ) : (
               <>
-                <div style={styles.paymentSummary}>
-                  <div style={styles.paymentSummaryItem}>
-                    <span style={styles.paymentSummaryLabel}>Total Service Price:</span>
-                    <span style={styles.paymentSummaryValue}>
-                      ${parseFloat(transactionToComplete.tot_service_price).toFixed(2)}
-                    </span>
+                <div className="bg-gray-100 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-600 font-medium">Total Service Price:</span>
+                    <span className="font-semibold">${parseFloat(transactionToComplete.tot_service_price).toFixed(2)}</span>
                   </div>
-                  <div style={styles.paymentSummaryItem}>
-                    <span style={styles.paymentSummaryLabel}>Amount Paid:</span>
-                    <span style={styles.paymentSummaryValue}>
-                      ${parseFloat(transactionToComplete.amount_pay).toFixed(2)}
-                    </span>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-600 font-medium">Amount Paid:</span>
+                    <span className="font-semibold">${parseFloat(transactionToComplete.amount_pay).toFixed(2)}</span>
                   </div>
-                  <div style={styles.paymentSummaryItem}>
-                    <span style={styles.paymentSummaryLabel}>Remaining Balance:</span>
-                    <span style={{ ...styles.paymentSummaryValue, color: '#10b981' }}>
-                      ${parseFloat(transactionToComplete.remain_bal).toFixed(2)}
-                    </span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Remaining Balance:</span>
+                    <span className="font-semibold text-green-600">${parseFloat(transactionToComplete.remain_bal).toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Payment Amount</label>
-                  <div style={styles.inputWithIcon}>
-                    <FaMoneyBillWave style={styles.inputIcon} />
+                <div className="mb-4">
+                  <label className="block mb-1 font-medium text-sm">Payment Amount</label>
+                  <div className="relative">
+                    <FaMoneyBillWave className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
                     <input
                       type="number"
                       name="amount"
                       value={paymentData.amount}
                       onChange={handlePaymentChange}
-                      style={styles.inputField}
+                      className="w-full p-2 pl-8 border border-gray-200 rounded text-sm"
                       placeholder="0.00"
                       min="0"
                       max={transactionToComplete.remain_bal}
@@ -1114,54 +660,46 @@ function Fulfillment() {
                       disabled={completingTransaction}
                     />
                   </div>
-                  {errors.amount && <div style={styles.errorMessage}>{errors.amount}</div>}
+                  {errors.amount && <div className="text-red-500 text-xs mt-1">{errors.amount}</div>}
                 </div>
 
-                <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>Payment Status</label>
-                    <div style={styles.inputWithIcon}>
-                        <FaMoneyBillWave style={styles.inputIcon} />
-                        <input
-                            type="text"
-                            name="status"
-                            value={paymentData.status || 'Second Payment'}
-                            onChange={handlePaymentChange}
-                            style={styles.inputField}
-                            disabled={completingTransaction}
-                            readOnly
-                        />
-                    </div>
+                <div className="mb-4">
+                  <label className="block mb-1 font-medium text-sm">Payment Status</label>
+                  <div className="relative">
+                    <FaMoneyBillWave className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      name="status"
+                      value={paymentData.status || 'Second Payment'}
+                      onChange={handlePaymentChange}
+                      className="w-full p-2 pl-8 border border-gray-200 rounded text-sm bg-gray-50"
+                      disabled={completingTransaction}
+                      readOnly
+                    />
+                  </div>
                 </div>
 
-                <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Payment Date</label>
-                  <div style={styles.inputWithIcon}>
-                    <FaCalendarAlt style={styles.inputIcon} />
+                <div className="mb-4">
+                  <label className="block mb-1 font-medium text-sm">Payment Date</label>
+                  <div className="relative">
+                    <FaCalendarAlt className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500" />
                     <input
                       type="date"
                       name="date"
                       value={paymentData.date}
                       onChange={handlePaymentChange}
-                      style={styles.inputField}
+                      className="w-full p-2 pl-8 border border-gray-200 rounded text-sm"
                       disabled={completingTransaction}
                     />
                   </div>
-                  {errors.date && <div style={styles.errorMessage}>{errors.date}</div>}
+                  {errors.date && <div className="text-red-500 text-xs mt-1">{errors.date}</div>}
                 </div>
 
-                <div style={styles.confirmationButtons}>
-                  <button 
-                    style={styles.cancelButton}
-                    onClick={handleCloseCompletionModal}
-                    disabled={completingTransaction}
-                  >
+                <div className="flex justify-end gap-3 mt-4">
+                  <button className="px-4 py-2 bg-red-500 text-white rounded font-medium hover:bg-red-600" onClick={handleCloseCompletionModal} disabled={completingTransaction}>
                     Cancel
                   </button>
-                  <button 
-                    style={styles.confirmButton}
-                    onClick={handleSubmitCompletion}
-                    disabled={completingTransaction}
-                  >
+                  <button className="px-4 py-2 bg-green-500 text-white rounded font-medium flex items-center gap-1.5 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed" onClick={handleSubmitCompletion} disabled={completingTransaction}>
                     {completingTransaction ? (
                       <>
                         <FaSpinner className="animate-spin" /> Processing...

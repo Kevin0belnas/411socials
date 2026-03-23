@@ -518,85 +518,156 @@ router.post('/contacts/batch', async (req, res) => {
 
 // Update contact
 router.put('/contacts/:id', async (req, res) => {
-    const db = getDB();
-    try {
-      console.log('Received PUT /contacts/:id with body:', req.body);
-      
-      // Destructure with default values for optional fields
-      const { 
-        name,
-        email = null,
-        phone = null,
-        leadOwner = null,
-        author = null,
-        publisher = null,
-        bookTitle = null,
-        assignedTo = null
-      } = req.body;
-  
-      // Validate required fields
-      if (!name) {
-        return res.status(400).json({ error: 'Name is required' });
-      }
-  
-      const [result] = await db.execute(
-        `UPDATE contacts SET 
-        name = ?, 
-        email = ?, 
-        phone = ?, 
-        lead_owner = ?, 
-        author = ?, 
-        publisher = ?, 
-        book_title = ?, 
-        assigned_to = COALESCE(?, assigned_to),
-        updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [
-          name,
-          email,
-          phone,
-          leadOwner,
-          author,
-          publisher,
-          bookTitle,
-          assignedTo,
-          req.params.id
-        ]
-      );
-  
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Contact not found' });
-      }
-  
-      // Return the full updated contact
-      const [updatedContact] = await db.execute(`
-        SELECT 
-          id,
-          name,
-          email,
-          phone,
-          lead_owner as leadOwner,
-          author,
-          publisher,
-          book_title as bookTitle,
-          status,
-          assigned_to as assignedTo,
-          created_at as createdAt,
-          updated_at as updatedAt
-        FROM contacts 
-        WHERE id = ?`, 
-        [req.params.id]
-      );
-      
-      res.json(updatedContact[0]);
-    } catch (err) {
-      console.error('Error updating contact:', err);
-      res.status(500).json({ 
-        error: 'Failed to update contact',
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined
-      });
+  const db = getDB();
+  try {
+    console.log('Received PUT /contacts/:id with body:', req.body);
+    
+    // Destructure with all fields
+    const { 
+      name,
+      email = null,
+      phone = null,
+      leadOwner = null,
+      author = null,
+      publisher = null,
+      bookTitle = null,
+      status = null,
+      rating = null,
+      street_address = null,
+      city = null,
+      state = null,
+      zipcode = null,
+      reserve_note = null,
+      comment = null,
+      assignedTo = null
+    } = req.body;
+
+    // Validate required fields
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
-  });
+
+    // Build dynamic update query to only update fields that are provided
+    const updateFields = [];
+    const updateValues = [];
+
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (email !== undefined) {
+      updateFields.push('email = ?');
+      updateValues.push(email);
+    }
+    if (phone !== undefined) {
+      updateFields.push('phone = ?');
+      updateValues.push(phone);
+    }
+    if (leadOwner !== undefined) {
+      updateFields.push('lead_owner = ?');
+      updateValues.push(leadOwner);
+    }
+    if (author !== undefined) {
+      updateFields.push('author = ?');
+      updateValues.push(author);
+    }
+    if (publisher !== undefined) {
+      updateFields.push('publisher = ?');
+      updateValues.push(publisher);
+    }
+    if (bookTitle !== undefined) {
+      updateFields.push('book_title = ?');
+      updateValues.push(bookTitle);
+    }
+    if (status !== undefined) {
+      updateFields.push('status = ?');
+      updateValues.push(status);
+    }
+    if (rating !== undefined) {
+      updateFields.push('rating = ?');
+      updateValues.push(rating);
+    }
+    if (street_address !== undefined) {
+      updateFields.push('street_address = ?');
+      updateValues.push(street_address);
+    }
+    if (city !== undefined) {
+      updateFields.push('city = ?');
+      updateValues.push(city);
+    }
+    if (state !== undefined) {
+      updateFields.push('state = ?');
+      updateValues.push(state);
+    }
+    if (zipcode !== undefined) {
+      updateFields.push('zipcode = ?');
+      updateValues.push(zipcode);
+    }
+    if (reserve_note !== undefined) {
+      updateFields.push('reserve_note = ?');
+      updateValues.push(reserve_note);
+    }
+    if (comment !== undefined) {
+      updateFields.push('comment = ?');
+      updateValues.push(comment);
+    }
+    if (assignedTo !== undefined) {
+      updateFields.push('assigned_to = ?');
+      updateValues.push(assignedTo);
+    }
+
+    // Always update the timestamp
+    updateFields.push('updated_at = CURRENT_TIMESTAMP');
+
+    // Add ID to values
+    updateValues.push(req.params.id);
+
+    // Execute the update
+    const [result] = await db.execute(
+      `UPDATE contacts SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    // Return the full updated contact
+    const [updatedContact] = await db.execute(`
+      SELECT 
+        id,
+        name,
+        email,
+        phone,
+        lead_owner as leadOwner,
+        author,
+        publisher,
+        book_title as bookTitle,
+        status,
+        rating,
+        street_address,
+        city,
+        state,
+        zipcode,
+        reserve_note,
+        comment,
+        assigned_to as assignedTo,
+        created_at as createdAt,
+        updated_at as updatedAt
+      FROM contacts 
+      WHERE id = ?`, 
+      [req.params.id]
+    );
+    
+    res.json(updatedContact[0]);
+  } catch (err) {
+    console.error('Error updating contact:', err);
+    res.status(500).json({ 
+      error: 'Failed to update contact',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
 
 // Assign contact to agent
 // router.post('/contacts/:id/assign', async (req, res) => {
@@ -1937,6 +2008,83 @@ router.post('/leads/:id/comment', async (req, res) => {
 });
 
 
+// router.put('/update-ratings/:id', async (req, res) => {
+//   const db = getDB();
+//   const { id } = req.params;
+//   const { rating } = req.body;
+//   console.log('Received rating:', rating);
+
+//   try {
+//     // Validate input
+//     if (!id || isNaN(id)) {
+//       return res.status(400).json({ error: 'Invalid contact ID' });
+//     }
+
+//     // Validate rating value
+//     const validRatings = ['Flagged', 'Decline'];
+//     if (rating && !validRatings.includes(rating)) {
+//       return res.status(400).json({ 
+//         error: 'Invalid rating value',
+//         validValues: validRatings
+//       });
+//     }
+
+//     // Prepare update query based on rating
+//     let query, params;
+    
+//     if (rating === 'Decline') {
+//       // If declining, nullify transfer fields
+//       query = `
+//         UPDATE contacts 
+//         SET rating = NULL, 
+//             rating_updated_at = NOW(),
+//             assigned_to = NULL,
+//             transferred_to = NULL,
+//             transferred_at = NULL,
+//             transferred_to_gmail = NULL,
+//             lead_owner = NULL,
+//             status = 'New'
+//         WHERE id = ?`;
+//       params = [id];
+//     } else {
+//       // For other ratings (Flagged), just update rating
+//       query = `
+//         UPDATE contacts 
+//         SET rating = ?, 
+//             rating_updated_at = NOW(),
+//             status = 'Contacted'
+//         WHERE id = ?`;
+//       params = [rating, id];
+//     }
+
+//     // Execute the update
+//     const [result] = await db.execute(query, params);
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ error: 'Contact not found' });
+//     }
+
+//     // Get the updated contact
+//     const [updatedContacts] = await db.execute(
+//       'SELECT * FROM contacts WHERE id = ?',
+//       [id]
+//     );
+
+//     res.json({
+//       success: true,
+//       message: 'Rating updated successfully',
+//       data: updatedContacts[0]
+//     });
+
+//   } catch (error) {
+//     console.error('Database error:', error);
+//     res.status(500).json({ 
+//       error: 'Failed to update rating',
+//       details: error.message
+//     });
+//   }
+// });
+
 router.put('/update-ratings/:id', async (req, res) => {
   const db = getDB();
   const { id } = req.params;
@@ -1958,25 +2106,16 @@ router.put('/update-ratings/:id', async (req, res) => {
       });
     }
 
-    // Prepare update query based on rating
     let query, params;
+    let deleted = false;
     
     if (rating === 'Decline') {
-      // If declining, nullify transfer fields
-      query = `
-        UPDATE contacts 
-        SET rating = NULL, 
-            rating_updated_at = NOW(),
-            assigned_to = NULL,
-            transferred_to = NULL,
-            transferred_at = NULL,
-            transferred_to_gmail = NULL,
-            lead_owner = NULL,
-            status = 'New'
-        WHERE id = ?`;
+      // DELETE the contact for wrong numbers
+      query = `DELETE FROM contacts WHERE id = ?`;
       params = [id];
+      deleted = true;
     } else {
-      // For other ratings (Flagged), just update rating
+      // FLAGGED: Update rating and status
       query = `
         UPDATE contacts 
         SET rating = ?, 
@@ -1986,23 +2125,26 @@ router.put('/update-ratings/:id', async (req, res) => {
       params = [rating, id];
     }
 
-    // Execute the update
     const [result] = await db.execute(query, params);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Contact not found' });
     }
 
-    // Get the updated contact
-    const [updatedContacts] = await db.execute(
-      'SELECT * FROM contacts WHERE id = ?',
-      [id]
-    );
+    let updatedContact = null;
+    if (!deleted) {
+      const [updatedContacts] = await db.execute(
+        'SELECT * FROM contacts WHERE id = ?',
+        [id]
+      );
+      updatedContact = updatedContacts[0];
+    }
 
     res.json({
       success: true,
-      message: 'Rating updated successfully',
-      data: updatedContacts[0]
+      message: rating === 'Decline' ? 'Lead deleted' : 'Lead flagged',
+      deleted: deleted,
+      data: updatedContact
     });
 
   } catch (error) {

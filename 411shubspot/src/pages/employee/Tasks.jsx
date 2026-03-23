@@ -821,33 +821,69 @@ Please format the response in a clear, organized way with sections for Amazon Pr
   }, []);
 
   const handleRatingChange = async (id, newRating) => {
-    setUpdatingRatings(prev => ({ ...prev, [id]: true }));
+  setUpdatingRatings(prev => ({ ...prev, [id]: true }));
 
-    try {
-      const response = await fetch(`${API_URL}/api/update-ratings/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: newRating })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to update rating');
+  try {
+    const lead = leads.find(l => l.id === id);
+    
+    if (newRating === 'Decline') {
+      // Simple confirmation for decline
+      const confirmDecline = window.confirm(
+        `⚠️ Delete Lead?\n\n` +
+        `Are you sure you want to delete "${lead?.name || 'this lead'}"?\n\n` +
+        `⚠️ Only use for WRONG NUMBER!\n\n` +
+        `This action cannot be undone.`
+      );
+      
+      if (!confirmDecline) {
+        setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+        return;
       }
-
-      await fetchAssignedLeads();
-
-      setShowRatingChangeModal(false);
-      setPendingRatingChange(null);
-
-    } catch (error) {
-      console.error('Error updating rating:', error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+    } else if (newRating === 'Flagged') {
+      // Simple confirmation for flagged
+      const confirmFlagged = window.confirm(
+        `⭐ Flag Lead?\n\n` +
+        `Mark "${lead?.name || 'this lead'}" as Flagged?\n\n` +
+        `This lead will be saved for follow-up.`
+      );
+      
+      if (!confirmFlagged) {
+        setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+        return;
+      }
     }
-  };
+    
+    const response = await fetch(`${API_URL}/api/update-ratings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: newRating })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update rating');
+    }
+
+    // Simple success message
+    if (newRating === 'Decline') {
+      alert(`✅ Lead "${lead?.name}" deleted.`);
+    } else if (newRating === 'Flagged') {
+      alert(`⭐ Lead "${lead?.name}" flagged.`);
+    }
+
+    await fetchAssignedLeads();
+
+    setShowRatingChangeModal(false);
+    setPendingRatingChange(null);
+
+  } catch (error) {
+    console.error('Error updating rating:', error);
+    alert(`❌ Error: ${error.message}`);
+  } finally {
+    setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+  }
+};
 
   const handleRatingSelect = (id, currentRating, newRating) => {
     if (currentRating !== newRating) {
@@ -869,23 +905,23 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }
   };
 
-  const handleTransferContact = async (leadId, newAgentId) => {
-    try {
-      await fetch(`${API_URL}/api/transfer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId, newAgentId }),
-      });
-      setLeads(leads.map(lead => lead.id === leadId ? { ...lead, transferred_to: newAgentId } : lead));
-    } catch (err) {
-      console.error('Transfer failed:', err);
-    }
-  };
+  // const handleTransferContact = async (leadId, newAgentId) => {
+  //   try {
+  //     await fetch(`${API_URL}/api/transfer`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ leadId, newAgentId }),
+  //     });
+  //     setLeads(leads.map(lead => lead.id === leadId ? { ...lead, transferred_to: newAgentId } : lead));
+  //   } catch (err) {
+  //     console.error('Transfer failed:', err);
+  //   }
+  // };
 
-  const getAgentName = (transferred_to) => {
-    const agent = agents.find((a) => String(a.id) === String(transferred_to));
-    return agent ? `${agent.name} (${agent.email})` : 'Unknown Agent';
-  };
+  // const getAgentName = (transferred_to) => {
+  //   const agent = agents.find((a) => String(a.id) === String(transferred_to));
+  //   return agent ? `${agent.name} (${agent.email})` : 'Unknown Agent';
+  // };
 
   const handleLocalCommentChange = (leadId, newComment) => {
     setEditingCommentsTemp(prev => ({ ...prev, [leadId]: newComment }));
@@ -1112,7 +1148,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Book Details</th>
                 {/* <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Status</th> */}
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Rating</th>
-                <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Transfer To</th>
+                {/* <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Transfer To</th> */}
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Comment</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Actions</th>
               </tr>
@@ -1239,7 +1275,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                       )}
                     </td>
                     
-                    <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
+                    {/* <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       {lead.transferred_to ? (
                         <div className="text-xs">
                           {getAgentName(lead.transferred_to)}
@@ -1261,7 +1297,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                             ))}
                         </select>
                       )}
-                    </td>
+                    </td> */}
                     
                     <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       {editingComment[lead.id] ? (
