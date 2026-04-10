@@ -1857,26 +1857,29 @@ router.get('/contacts-agents', async (req, res) => {
     let baseParams = [agentId, agentId];
     let countParams = [agentId, agentId];
 
-    // Add search condition
+    // 🔥 SAME SEARCH LOGIC as /contacts endpoint
     if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
       const normalizedSearch = search.replace(/[\s()+\-.]/g, '');
-      const likeSearch = `%${search}%`;
 
-      const conditions = [
+      const searchConditions = [
         `LOWER(name) LIKE ?`,
         `LOWER(email) LIKE ?`,
         `LOWER(book_title) LIKE ?`
       ];
-      const searchParams = [likeSearch, likeSearch, likeSearch];
+      const searchParams = [searchTerm, searchTerm, searchTerm];
 
       if (/^\d+$/.test(normalizedSearch)) {
-        conditions.splice(2, 0, `
+        searchConditions.splice(2, 0, `
           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
         `);
         searchParams.splice(2, 0, `%${normalizedSearch}%`);
+      } else {
+        searchConditions.push(`phone LIKE ?`);
+        searchParams.push(searchTerm);
       }
 
-      const searchCondition = `AND (${conditions.join(' OR ')})`;
+      const searchCondition = `AND (${searchConditions.join(' OR ')})`;
       baseQuery += `\n${searchCondition}`;
       countQuery += `\n${searchCondition}`;
 
@@ -1884,23 +1887,23 @@ router.get('/contacts-agents', async (req, res) => {
       countParams.push(...searchParams);
     }
 
-    // Add filter condition
+    // 🔥 FIXED: Updated filter condition
     let filterCondition = '';
     if (filter === 'flagged') {
       filterCondition = ` AND rating = 'Flagged'`;
     } else if (filter === 'incomplete') {
       filterCondition = ` AND payment_status = 'incomplete'`;
     } else {
+      // For 'myContacts' tab - only exclude flagged leads
+      // Allow all payment statuses including 'Completed'
       filterCondition = `
-        AND (payment_status IS NULL OR payment_status NOT IN ('incomplete', 'completed'))
         AND (rating IS NULL OR rating != 'Flagged')
       `;
     }
-
     baseQuery += filterCondition;
     countQuery += filterCondition;
 
-    // 🔥 FIX: Add ORDER BY id DESC to show newest first for agents
+    // Add ORDER BY id DESC to show newest first
     baseQuery += ` ORDER BY id DESC LIMIT ${pageSize} OFFSET ${offset}`;
 
     // Execute queries
@@ -1923,6 +1926,8 @@ router.get('/contacts-agents', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch contacts' });
   }
 });
+
+
 router.post('/contacts/:id/status', async (req, res) => {
   const db = getDB();
   const { id } = req.params;
@@ -2419,7 +2424,7 @@ router.get('/contacts-fullfilled', async (req, res) => {
     const [results] = await db.execute(
       `SELECT * FROM contacts 
        WHERE (assigned_to = ? OR transferred_to = ?)
-       AND LOWER(TRIM(status)) IN ('completed', 'in progress')`,
+       AND LOWER(TRIM(status)) IN ('completed', 'in progress', 'Closed')`,
       [agentId, agentId]
     );
     
@@ -7144,6 +7149,352 @@ router.get("/dashboard/stats/simple", async (req, res) => {
     } catch (fallbackErr) {
       res.status(500).json({ error: "Failed to fetch stats" });
     }
+  }
+});
+
+
+// Backend API endpoints for /manage-leads
+
+// GET /manage-leads - Fetch contacts with pagination and filters
+router.get('/manage-leads', async (req, res) => {
+  const db = getDB();
+  try {
+    const { 
+      search, 
+      view, 
+      assignedTo, 
+      leadOwner,
+      status, 
+      page = 1, 
+      pageSize = 20 
+    } = req.query;
+    
+    let query = 'SELECT * FROM contacts';
+    const params = [];
+    const whereClauses = [];
+
+    // Search functionality
+    if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
+      const normalizedSearch = search.replace(/[\s()+\-.]/g, '');
+      
+      const searchConditions = [
+        `LOWER(name) LIKE ?`,
+        `LOWER(email) LIKE ?`,
+        `LOWER(book_title) LIKE ?`,
+        `LOWER(author) LIKE ?`,
+        `LOWER(lead_owner) LIKE ?`
+      ];
+      const searchParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+      
+      if (/^\d+$/.test(normalizedSearch)) {
+        searchConditions.push(`
+          REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, '(', ''), ')', ''), '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?
+        `);
+        searchParams.push(`%${normalizedSearch}%`);
+      } else {
+        searchConditions.push(`phone LIKE ?`);
+        searchParams.push(searchTerm);
+      }
+      
+      whereClauses.push(`(${searchConditions.join(' OR ')})`);
+      params.push(...searchParams);
+    }
+    
+    // View filters
+    if (view === 'unassigned') {
+      whereClauses.push('assigned_to IS NULL');
+      whereClauses.push('status = "New"');
+    } else if (view === 'my') {
+      whereClauses.push('assigned_to = ?');
+      params.push(req.session.userId || 1);
+    }
+    
+    // Status filter
+    if (status) {
+      whereClauses.push('status = ?');
+      params.push(status);
+    }
+    
+    // Assigned to filter
+    if (assignedTo) {
+      whereClauses.push('assigned_to = ?');
+      params.push(assignedTo);
+    }
+    
+    // Lead owner filter
+    if (leadOwner) {
+      whereClauses.push('lead_owner LIKE ?');
+      params.push(`%${leadOwner}%`);
+    }
+    
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
+    }
+    
+    // Order by newest first
+    query += ' ORDER BY created_at DESC, id DESC';
+    
+    // Get total count
+    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) AS total');
+    const [countRows] = await db.execute(countQuery, params);
+    const totalCount = countRows[0].total;
+    
+    // Add pagination
+    const safeLimit = Math.max(1, parseInt(pageSize) || 20);
+    const safeOffset = Math.max(0, (parseInt(page) - 1) * safeLimit);
+    query += ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+    
+    const [rows] = await db.execute(query, params);
+    
+    // Calculate statistics
+    const assignedCount = rows.filter(r => r.assigned_to).length;
+    const unassignedCount = rows.filter(r => !r.assigned_to && r.status === 'New').length;
+    
+    // Get duplicate count (optional)
+    const duplicateQuery = `
+      SELECT COUNT(*) as count FROM (
+        SELECT email, COUNT(*) as cnt 
+        FROM contacts 
+        WHERE email IS NOT NULL AND email != ''
+        GROUP BY email 
+        HAVING cnt > 1
+        UNION ALL
+        SELECT phone, COUNT(*) as cnt 
+        FROM contacts 
+        WHERE phone IS NOT NULL AND phone != ''
+        GROUP BY phone 
+        HAVING cnt > 1
+      ) as duplicates
+    `;
+    const [duplicateRows] = await db.execute(duplicateQuery);
+    const duplicateCount = duplicateRows[0].count || 0;
+    
+    res.json({
+      contacts: rows,
+      totalCount,
+      assignedCount,
+      unassignedCount,
+      duplicateCount,
+      currentPage: parseInt(page),
+      pageSize: safeLimit,
+      totalPages: Math.ceil(totalCount / safeLimit)
+    });
+    
+  } catch (err) {
+    console.error('Error fetching contacts:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /manage-leads/duplicates - Find duplicate contacts based on phone (prioritize Flagged)
+router.get('/manage-leads/duplicates', async (req, res) => {
+  const db = getDB();
+  try {
+    let { page = 1, pageSize = 10 } = req.query;
+    
+    // Validate and sanitize inputs
+    page = Math.max(1, parseInt(page) || 1);
+    pageSize = Math.min(100, Math.max(1, parseInt(pageSize) || 10));
+    const offset = (page - 1) * pageSize;
+    
+    // Find all phone numbers that appear 2 or more times
+    const query = `
+      SELECT 
+        phone, 
+        COUNT(*) as count,
+        MIN(id) as oldest_id,
+        MIN(created_at) as oldest_created,
+        MAX(created_at) as newest_created
+      FROM contacts
+      WHERE phone IS NOT NULL AND phone != '' AND phone != 'null'
+      GROUP BY phone
+      HAVING count >= 2
+      ORDER BY count DESC, oldest_created ASC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `;
+    
+    const [duplicatePhones] = await db.execute(query);
+    
+    // Get total count of duplicate groups
+    const [totalCountResult] = await db.execute(`
+      SELECT COUNT(*) as total FROM (
+        SELECT phone
+        FROM contacts
+        WHERE phone IS NOT NULL AND phone != '' AND phone != 'null'
+        GROUP BY phone
+        HAVING COUNT(*) >= 2
+      ) as duplicate_groups
+    `);
+    const totalGroups = totalCountResult[0].total;
+    
+    const duplicateGroups = [];
+    const duplicates = [];
+    let totalDuplicatesCount = 0;
+    
+    // For each duplicate phone number, get ALL contacts
+    for (const dup of duplicatePhones) {
+      const [contacts] = await db.execute(`
+        SELECT * FROM contacts 
+        WHERE phone = ? 
+        ORDER BY 
+          CASE 
+            WHEN rating = 'Flagged' THEN 1 
+            ELSE 2 
+          END,
+          created_at ASC, 
+          id ASC
+      `, [dup.phone]);
+      
+      // Find which contact to keep (prioritize Flagged, then oldest)
+      let keepIndex = 0;
+      let keepReason = 'Oldest entry';
+      
+      // Check if there's a Flagged contact
+      const flaggedIndex = contacts.findIndex(c => c.rating === 'Flagged');
+      if (flaggedIndex !== -1) {
+        keepIndex = flaggedIndex;
+        keepReason = 'Flagged lead (priority keep)';
+      }
+      
+      // Move the contact to keep to the front of the array
+      const contactsToKeep = [contacts[keepIndex]];
+      const contactsToDelete = contacts.filter((_, idx) => idx !== keepIndex);
+      const sortedContacts = [...contactsToKeep, ...contactsToDelete];
+      
+      duplicateGroups.push({
+        field: 'phone',
+        value: dup.phone,
+        totalCount: contacts.length,
+        contacts: sortedContacts,
+        keepId: sortedContacts[0].id,
+        keepReason: keepReason,
+        duplicateCount: contacts.length - 1,
+        hasFlagged: flaggedIndex !== -1,
+        oldestDate: contacts[0].created_at,
+        newestDate: contacts[contacts.length - 1].created_at
+      });
+      
+      // Add all except the kept one to duplicates list
+      duplicates.push(...contactsToDelete);
+      totalDuplicatesCount += contactsToDelete.length;
+    }
+    
+    res.json({
+      duplicateGroups,
+      duplicates,
+      totalDuplicateCount: totalDuplicatesCount,
+      totalGroups: totalGroups,
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(totalGroups / pageSize)
+    });
+    
+  } catch (err) {
+    console.error('Error finding phone duplicates:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /manage-leads/bulk-delete - Delete multiple contacts
+router.post('/manage-leads/bulk-delete', async (req, res) => {
+  const db = getDB();
+  const { contactIds } = req.body;
+  
+  if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
+    return res.status(400).json({ error: 'No contact IDs provided' });
+  }
+  
+  try {
+    const placeholders = contactIds.map(() => '?').join(',');
+    const query = `DELETE FROM contacts WHERE id IN (${placeholders})`;
+    
+    const [result] = await db.execute(query, contactIds);
+    
+    res.json({
+      success: true,
+      deletedCount: result.affectedRows,
+      message: `${result.affectedRows} contact(s) deleted successfully`
+    });
+    
+  } catch (err) {
+    console.error('Error deleting contacts:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Optional: GET /manage-leads/export - Export filtered contacts to CSV
+router.get('/manage-leads/export', async (req, res) => {
+  const db = getDB();
+  try {
+    const { search, view, assignedTo, leadOwner, status } = req.query;
+    let query = 'SELECT * FROM contacts';
+    const params = [];
+    const whereClauses = [];
+    
+    // Apply same filters as the main endpoint
+    if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
+      whereClauses.push(`(LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(book_title) LIKE ?)`);
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+    
+    if (view === 'unassigned') {
+      whereClauses.push('assigned_to IS NULL AND status = "New"');
+    } else if (view === 'my') {
+      whereClauses.push('assigned_to = ?');
+      params.push(req.session.userId || 1);
+    }
+    
+    if (status) {
+      whereClauses.push('status = ?');
+      params.push(status);
+    }
+    
+    if (assignedTo) {
+      whereClauses.push('assigned_to = ?');
+      params.push(assignedTo);
+    }
+    
+    if (leadOwner) {
+      whereClauses.push('lead_owner LIKE ?');
+      params.push(`%${leadOwner}%`);
+    }
+    
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const [rows] = await db.execute(query, params);
+    
+    // Convert to CSV
+    const csvHeader = ['ID', 'Name', 'Email', 'Phone', 'Lead Owner', 'Author', 'Publisher', 'Book Title', 'Status', 'Assigned To', 'Created At', 'Updated At'];
+    const csvRows = rows.map(row => [
+      row.id,
+      row.name,
+      row.email || '',
+      row.phone || '',
+      row.lead_owner || '',
+      row.author || '',
+      row.publisher || '',
+      row.book_title || '',
+      row.status || '',
+      row.assigned_to || '',
+      row.created_at,
+      row.updated_at
+    ]);
+    
+    const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=contacts_export_${Date.now()}.csv`);
+    res.send(csvContent);
+    
+  } catch (err) {
+    console.error('Error exporting contacts:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

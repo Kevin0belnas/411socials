@@ -175,7 +175,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5174",
-  "http://192.168.68.6:5174",
+  "http://192.168.68.20:5174",
   "https://nn6fwsg5-5174.asse.devtunnels.ms"
 ];
 
@@ -231,21 +231,21 @@ async function resetOldLeads() {
       console.log('🔄 Checking for leads older than 7 days...', new Date().toISOString());
       
       // 1. Reset leads that are NOT completed and older than 7 days
-      const [result] = await db.execute(`
-        UPDATE contacts 
-        SET status = 'New',
-            rating = NULL,
-            assigned_to = NULL,
-            lead_owner = NULL
-        WHERE status != 'Completed'
-        AND (
-          rating = 'Flagged' 
-          OR rating = 'Decline'
-          OR status = 'Contacted'
-          OR status = 'In Progress'
-        )
-        AND updated_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
-      `);
+      // const [result] = await db.execute(`
+      //   UPDATE contacts 
+      //   SET status = 'New',
+      //       rating = NULL,
+      //       assigned_to = NULL,
+      //       lead_owner = NULL
+      //   WHERE status != 'Completed'
+      //   AND (
+      //     rating = 'Flagged' 
+      //     OR rating = 'Decline'
+      //     OR status = 'Contacted'
+      //     OR status = 'In Progress'
+      //   )
+      //   AND updated_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+      // `);
       
       // 2. Reset leads based on assignment_history (cleared leads)
       // FIXED: Removed GROUP BY and used subquery instead

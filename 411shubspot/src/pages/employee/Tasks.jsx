@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaTimes, FaFilePdf, FaRegFileAlt, FaCopy, FaCheck, FaExpandArrowsAlt, FaCompressArrowsAlt, FaUser, FaBook, FaPhone, FaEnvelope, FaMapMarkerAlt, FaEdit, FaSave, FaSpinner, FaGlobe, FaRobot } from "react-icons/fa";
-import { scriptTemplates, scriptOptions } from './scriptTemplates'; // Import from separate file
+import { scriptTemplates, scriptOptions } from './scriptTemplates';
 
 const API_URL = import.meta.env.VITE_API_URL;
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY; // Add your Gemini API key to .env
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 // Debounce utility function
 const debounce = (func, wait) => {
@@ -102,11 +102,9 @@ const DraggableResizableModal = ({
 
   const toggleFullscreen = () => {
     if (!isFullscreen.current) {
-      // Save original size and position
       originalSize.current = { ...size };
       originalPosition.current = { ...position };
       
-      // Go fullscreen
       setPosition({ x: 0, y: 0 });
       setSize({ 
         width: window.innerWidth, 
@@ -114,7 +112,6 @@ const DraggableResizableModal = ({
       });
       isFullscreen.current = true;
     } else {
-      // Restore original size and position
       setPosition(originalPosition.current);
       setSize(originalSize.current);
       isFullscreen.current = false;
@@ -147,7 +144,6 @@ const DraggableResizableModal = ({
           maxHeight: `${window.innerHeight}px`,
         }}
       >
-        {/* Header - Draggable area */}
         <div 
           className="flex justify-between items-center p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white cursor-move select-none"
           onMouseDown={handleMouseDown}
@@ -173,49 +169,39 @@ const DraggableResizableModal = ({
           </div>
         </div>
         
-        {/* Content */}
         <div className="flex-1 overflow-auto">
           {children}
         </div>
 
-        {/* Resize handles */}
         <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-          {/* Top */}
           <div
             className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize"
             onMouseDown={handleResizeMouseDown('n')}
           />
-          {/* Right */}
           <div
             className="absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize"
             onMouseDown={handleResizeMouseDown('e')}
           />
-          {/* Bottom */}
           <div
             className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize"
             onMouseDown={handleResizeMouseDown('s')}
           />
-          {/* Left */}
           <div
             className="absolute top-0 left-0 bottom-0 w-2 cursor-ew-resize"
             onMouseDown={handleResizeMouseDown('w')}
           />
-          {/* Top-Right */}
           <div
             className="absolute top-0 right-0 w-4 h-4 cursor-nesw-resize"
             onMouseDown={handleResizeMouseDown('ne')}
           />
-          {/* Bottom-Right */}
           <div
             className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
             onMouseDown={handleResizeMouseDown('se')}
           />
-          {/* Bottom-Left */}
           <div
             className="absolute bottom-0 left-0 w-4 h-4 cursor-nesw-resize"
             onMouseDown={handleResizeMouseDown('sw')}
           />
-          {/* Top-Left */}
           <div
             className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize"
             onMouseDown={handleResizeMouseDown('nw')}
@@ -226,15 +212,20 @@ const DraggableResizableModal = ({
   );
 };
 
-// Add the useDebounce hook at the top
+// ========== DEBOUNCE HOOK ==========
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
-    return () => clearTimeout(handler);
+
+    return () => {
+      clearTimeout(handler);
+    };
   }, [value, delay]);
+
   return debouncedValue;
 };
 
@@ -274,6 +265,7 @@ function Tasks() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [filePreviewURL, setFilePreviewURL] = useState(null);
 
+  // 🔥 FIXED SEARCH STATES
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -290,12 +282,11 @@ function Tasks() {
   const [geminiLoading, setGeminiLoading] = useState(false);
   const [geminiError, setGeminiError] = useState(null);
   
-  // Request queue for Gemini API
   const requestQueue = useRef([]);
   const isProcessingQueue = useRef(false);
   const researchCache = useRef(new Map());
   const lastRequestTime = useRef(0);
-  const MIN_REQUEST_INTERVAL = 2000; // Minimum 2 seconds between requests
+  const MIN_REQUEST_INTERVAL = 2000;
   
   const serviceOptions = [
     'NBSP', 'INBSP', 'Book Video', 'Screenplay', 'Republication', 
@@ -328,18 +319,18 @@ function Tasks() {
   const [editingBio, setEditingBio] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
 
-
-  // 🔥 Search handler
+  // 🔥 FIXED Search handlers
   const handleSearch = () => {
     setSearchTerm(searchInput);
+    setCurrentPage(1);
   };
 
-  // 🔥 Clear search handler
   const handleClearSearch = () => {
     setSearchInput('');
     setSearchTerm('');
+    setCurrentPage(1);
   };
-  // Queue processor
+
   const processRequestQueue = async () => {
     if (isProcessingQueue.current || requestQueue.current.length === 0) return;
     
@@ -348,7 +339,6 @@ function Tasks() {
     while (requestQueue.current.length > 0) {
       const request = requestQueue.current.shift();
       
-      // Ensure minimum time between requests
       const now = Date.now();
       const timeSinceLastRequest = now - lastRequestTime.current;
       if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
@@ -364,21 +354,18 @@ function Tasks() {
         console.error('Error processing queued request:', error);
       }
       
-      // Small delay between requests even if minimum interval is met
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     isProcessingQueue.current = false;
   };
 
-  // Enhanced fetchGeminiResearch with caching and queueing
   const fetchGeminiResearch = async (lead, retryCount = 0) => {
     if (!GEMINI_API_KEY) {
       setGeminiError('Gemini API key not configured');
       return;
     }
 
-    // Check cache first (cache for 1 hour)
     const cacheKey = `${lead.id}_${lead.name}`;
     const cachedData = researchCache.current.get(cacheKey);
     if (cachedData && (Date.now() - cachedData.timestamp) < 3600000) {
@@ -390,7 +377,6 @@ function Tasks() {
     setGeminiError(null);
     setGeminiResearch('');
 
-    // Add request to queue
     const makeRequest = async () => {
       try {
         const prompt = `Tell me more about this author:
@@ -424,7 +410,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
           const errorData = await response.json().catch(() => ({}));
           
           if (response.status === 429) {
-            let waitTime = 30; // Default to 30 seconds
+            let waitTime = 30;
             
             if (errorData.error?.details) {
               const retryInfo = errorData.error.details.find(d => 
@@ -438,7 +424,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
               }
             }
             
-            // Exponential backoff
             const baseWaitTime = waitTime * Math.pow(2, retryCount);
             
             if (retryCount < 3) {
@@ -446,7 +431,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
               
               await new Promise(resolve => setTimeout(resolve, baseWaitTime * 1000));
               
-              // Re-queue the request
               requestQueue.current.push({
                 fn: () => fetchGeminiResearch(lead, retryCount + 1)
               });
@@ -466,14 +450,12 @@ Please format the response in a clear, organized way with sections for Amazon Pr
           throw new Error('No response from Gemini');
         }
         
-        // Check if the response was blocked due to safety concerns
         if (data.candidates[0]?.finishReason === 'SAFETY') {
           throw new Error('Response was blocked due to safety concerns');
         }
         
         const researchText = data.candidates[0]?.content?.parts[0]?.text || 'No research results found';
         
-        // Cache the result
         researchCache.current.set(cacheKey, {
           data: researchText,
           timestamp: Date.now()
@@ -488,12 +470,10 @@ Please format the response in a clear, organized way with sections for Amazon Pr
       }
     };
 
-    // Add to queue and process
     requestQueue.current.push({ fn: makeRequest });
     processRequestQueue();
   };
 
-  // Debounced version of fetchGeminiResearch
   const debouncedFetchGeminiResearch = useCallback(
     debounce((lead) => {
       fetchGeminiResearch(lead);
@@ -501,24 +481,20 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     []
   );
 
-  // Manual retry handler
   const handleRetryResearch = () => {
     if (currentLeadForBio) {
-      // Clear cache for this lead to force fresh research
       const cacheKey = `${currentLeadForBio.id}_${currentLeadForBio.name}`;
       researchCache.current.delete(cacheKey);
       fetchGeminiResearch(currentLeadForBio);
     }
   };
 
-  // Function to open bio modal for a specific lead
   const openBioModal = async (lead) => {
     setCurrentLeadForBio(lead);
-    setGeminiResearch(''); // Clear previous research
+    setGeminiResearch('');
     setGeminiError(null);
     
     try {
-      // Fetch existing bio data from API
       const response = await fetch(`${API_URL}/api/leads/${lead.id}/bio`, {
         credentials: 'include'
       });
@@ -527,7 +503,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
         const data = await response.json();
         setBioData(data);
       } else {
-        // Fallback to basic data if API fails
         let phoneNumbers = [];
         try {
           phoneNumbers = lead.phone ? JSON.parse(lead.phone) : [];
@@ -561,7 +536,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
       }
     } catch (error) {
       console.error('Error fetching bio data:', error);
-      // Fallback to basic data
       let phoneNumbers = [];
       try {
         phoneNumbers = lead.phone ? JSON.parse(lead.phone) : [];
@@ -594,14 +568,12 @@ Please format the response in a clear, organized way with sections for Amazon Pr
       });
     }
     
-    // Use debounced fetch for Gemini research
     debouncedFetchGeminiResearch(lead);
     
     setShowBioModal(true);
     setEditingBio(false);
   };
 
-  // Function to handle bio data changes
   const handleBioChange = (field, value) => {
     setBioData(prev => ({
       ...prev,
@@ -609,12 +581,10 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }));
   };
 
-  // Function to save bio data
   const saveBioData = async () => {
     try {
       setSavingBio(true);
       
-      // Prepare data for API - send raw inputs
       const bioDataToSave = {
         name: bioData.name,
         book_titles_input: bioData.book_titles_input,
@@ -628,7 +598,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
         additional_notes: bioData.additional_notes
       };
       
-      // Call API to save bio data
       const response = await fetch(`${API_URL}/api/leads/${bioData.contact_id}/bio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -643,7 +612,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
       
       const result = await response.json();
       
-      // Update local state with processed data from backend
       const updatedLead = result.data;
       
       setLeads(prevLeads => 
@@ -661,7 +629,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
         )
       );
       
-      // Update bioData state to reflect saved changes
       if (updatedLead.book_title) {
         const bookTitlesArray = updatedLead.book_title
           .split(',')
@@ -701,17 +668,13 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }
   };
 
-  // Function to open script viewer for a specific lead
   const openScriptViewer = (lead) => {
     setCurrentLeadForScript(lead);
     setShowScriptViewer(true);
-    // Set default script
     setSelectedScript(scriptOptions[0]);
-    // Personalize the default script
     personalizeScriptContent(scriptOptions[0], lead);
   };
 
-  // Function to personalize script content with lead data
   const personalizeScriptContent = (scriptName, lead) => {
     let content = scriptTemplates[scriptName];
     
@@ -727,13 +690,11 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     setCopiedToClipboard(false);
   };
 
-  // Function to handle script selection
   const handleScriptSelect = (scriptName) => {
     setSelectedScript(scriptName);
     personalizeScriptContent(scriptName, currentLeadForScript);
   };
 
-  // Function to copy script to clipboard
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(selectedScriptContent);
@@ -744,6 +705,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }
   };
 
+  // 🔥 FIXED fetchAssignedLeads with proper search
   const fetchAssignedLeads = useCallback(async () => {
     try {
       setLoading(true);
@@ -751,8 +713,9 @@ Please format the response in a clear, organized way with sections for Amazon Pr
       url.searchParams.append('page', currentPage);
       url.searchParams.append('pageSize', pageSize);
       url.searchParams.append('filter', activeTab);
-      if (debouncedSearchTerm) {
-        url.searchParams.append('search', debouncedSearchTerm);
+      
+      if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
+        url.searchParams.append('search', debouncedSearchTerm.trim());
       }
 
       const response = await fetch(url, { credentials: 'include' });
@@ -789,6 +752,16 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     fetchAssignedLeads();
   }, [fetchAssignedLeads]);
 
+  // Reset page when tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  // Reset page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
   useEffect(() => {
     const fetchCurrentAgent = async () => {
       try {
@@ -820,76 +793,10 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     fetchAgents();
   }, []);
 
-  const handleRatingChange = async (id, newRating) => {
-  setUpdatingRatings(prev => ({ ...prev, [id]: true }));
-
-  try {
-    const lead = leads.find(l => l.id === id);
-    
-    if (newRating === 'Decline') {
-      // Simple confirmation for decline
-      const confirmDecline = window.confirm(
-        `⚠️ Delete Lead?\n\n` +
-        `Are you sure you want to delete "${lead?.name || 'this lead'}"?\n\n` +
-        `⚠️ Only use for WRONG NUMBER!\n\n` +
-        `This action cannot be undone.`
-      );
-      
-      if (!confirmDecline) {
-        setUpdatingRatings(prev => ({ ...prev, [id]: false }));
-        return;
-      }
-    } else if (newRating === 'Flagged') {
-      // Simple confirmation for flagged
-      const confirmFlagged = window.confirm(
-        `⭐ Flag Lead?\n\n` +
-        `Mark "${lead?.name || 'this lead'}" as Flagged?\n\n` +
-        `This lead will be saved for follow-up.`
-      );
-      
-      if (!confirmFlagged) {
-        setUpdatingRatings(prev => ({ ...prev, [id]: false }));
-        return;
-      }
-    }
-    
-    const response = await fetch(`${API_URL}/api/update-ratings/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating: newRating })
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Failed to update rating');
-    }
-
-    // Simple success message
-    if (newRating === 'Decline') {
-      alert(`✅ Lead "${lead?.name}" deleted.`);
-    } else if (newRating === 'Flagged') {
-      alert(`⭐ Lead "${lead?.name}" flagged.`);
-    }
-
-    await fetchAssignedLeads();
-
-    setShowRatingChangeModal(false);
-    setPendingRatingChange(null);
-
-  } catch (error) {
-    console.error('Error updating rating:', error);
-    alert(`❌ Error: ${error.message}`);
-  } finally {
-    setUpdatingRatings(prev => ({ ...prev, [id]: false }));
-  }
-};
-
-  const handleRatingSelect = (id, currentRating, newRating) => {
-    if (currentRating !== newRating) {
-      setPendingRatingChange({ id, currentRating, newRating });
-      setShowRatingChangeModal(true);
-    }
+  // Status update with confirmation
+  const handleStatusChangeWithConfirmation = (id, newStatus) => {
+    setPendingStatusChange({ id, newStatus });
+    setShowCompleteModal(true);
   };
 
   const handleStatusUpdate = async (id, newStatus) => {
@@ -905,23 +812,74 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }
   };
 
-  // const handleTransferContact = async (leadId, newAgentId) => {
-  //   try {
-  //     await fetch(`${API_URL}/api/transfer`, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({ leadId, newAgentId }),
-  //     });
-  //     setLeads(leads.map(lead => lead.id === leadId ? { ...lead, transferred_to: newAgentId } : lead));
-  //   } catch (err) {
-  //     console.error('Transfer failed:', err);
-  //   }
-  // };
+  const handleRatingChange = async (id, newRating) => {
+    setUpdatingRatings(prev => ({ ...prev, [id]: true }));
 
-  // const getAgentName = (transferred_to) => {
-  //   const agent = agents.find((a) => String(a.id) === String(transferred_to));
-  //   return agent ? `${agent.name} (${agent.email})` : 'Unknown Agent';
-  // };
+    try {
+      const lead = leads.find(l => l.id === id);
+      
+      if (newRating === 'Decline') {
+        const confirmDecline = window.confirm(
+          `⚠️ Delete Lead?\n\n` +
+          `Are you sure you want to delete "${lead?.name || 'this lead'}"?\n\n` +
+          `⚠️ Only use for WRONG NUMBER!\n\n` +
+          `This action cannot be undone.`
+        );
+        
+        if (!confirmDecline) {
+          setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+          return;
+        }
+      } else if (newRating === 'Flagged') {
+        const confirmFlagged = window.confirm(
+          `⭐ Flag Lead?\n\n` +
+          `Mark "${lead?.name || 'this lead'}" as Flagged?\n\n` +
+          `This lead will be saved for follow-up.`
+        );
+        
+        if (!confirmFlagged) {
+          setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+          return;
+        }
+      }
+      
+      const response = await fetch(`${API_URL}/api/update-ratings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: newRating })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update rating');
+      }
+
+      if (newRating === 'Decline') {
+        alert(`✅ Lead "${lead?.name}" deleted.`);
+      } else if (newRating === 'Flagged') {
+        alert(`⭐ Lead "${lead?.name}" flagged.`);
+      }
+
+      await fetchAssignedLeads();
+
+      setShowRatingChangeModal(false);
+      setPendingRatingChange(null);
+
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setUpdatingRatings(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const handleRatingSelect = (id, currentRating, newRating) => {
+    if (currentRating !== newRating) {
+      setPendingRatingChange({ id, currentRating, newRating });
+      setShowRatingChangeModal(true);
+    }
+  };
 
   const handleLocalCommentChange = (leadId, newComment) => {
     setEditingCommentsTemp(prev => ({ ...prev, [leadId]: newComment }));
@@ -946,15 +904,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
     }
   };
 
-  // const handleStatusChangeWithConfirmation = (id, newStatus) => {
-  //   if (['Completed', 'Contacted', 'Closed'].includes(newStatus)) {
-  //     setPendingStatusChange({ id, newStatus });
-  //     setShowCompleteModal(true);
-  //   } else {
-  //     handleStatusUpdate(id, newStatus);
-  //   }
-  // };
-
   const totalPages = Math.ceil(totalItems / pageSize);
 
   const paginate = (pageNumber) => {
@@ -974,11 +923,9 @@ Please format the response in a clear, organized way with sections for Amazon Pr
 
   return (
     <>
-
       <div className="p-4 bg-gray-50 min-h-screen">
         <h1 className="text-2xl mb-6 text-white font-bold bg-blue-400 p-7 rounded">Assigned Leads</h1>
         
-
         <div className="flex border-b border-gray-200 mb-6">
           <div 
             className={`px-6 py-3 cursor-pointer border-b-2 ${activeTab === 'myContacts' ? 'border-yellow-700 text-black font-semibold' : 'border-transparent text-gray-500'}`}
@@ -994,29 +941,11 @@ Please format the response in a clear, organized way with sections for Amazon Pr
           </div>
         </div>
 
-        {/* <div className="flex gap-3 mb-6 items-center flex-wrap">
-          <input
-            type="text"
-            placeholder="Search contacts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-3.5 py-2.5 rounded-lg border border-gray-300 flex-1 max-w-md min-w-60 text-sm transition-colors focus:outline-none focus:border-blue-300"
-          />
-          {searchTerm && (
-            <button 
-              onClick={() => setSearchTerm('')}
-              className="px-4.5 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg cursor-pointer text-sm transition-colors hover:bg-gray-200"
-            >
-              Clear
-            </button>
-          )}
-        </div> */}
-
-        {/* 🔥 Updated Search Section */}
+        {/* 🔥 FIXED Search Section */}
         <div className="flex gap-3 mb-6 items-center flex-wrap">
           <input
             type="text"
-            placeholder="Search contacts..."
+            placeholder="Search contacts by name, email, phone, or book title..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyPress={(e) => {
@@ -1041,6 +970,14 @@ Please format the response in a clear, organized way with sections for Amazon Pr
             </button>
           )}
         </div>
+
+        {/* 🔥 Search indicator */}
+        {searchTerm && (
+          <div className="mb-4 text-sm text-blue-600">
+            Showing results for: <strong>"{searchTerm}"</strong>
+            {totalItems === 0 && <span className="text-red-500 ml-2">- No results found</span>}
+          </div>
+        )}
 
         <div className="flex justify-between items-center flex-wrap mt-5">
           <div className="flex items-center gap-2">
@@ -1115,15 +1052,10 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                 type="number"
                 min="1"
                 max={totalPages}
-                value={searchInput}
+                value={currentPage}
                 onChange={(e) => {
                   const value = Math.min(Math.max(1, parseInt(e.target.value) || 1), totalPages);
-                  setSearchInput(value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    paginate(searchInput);
-                  }
+                  paginate(value);
                 }}
                 className="w-14 px-1 py-0.5 text-sm border border-gray-300 rounded text-center"
               />
@@ -1146,9 +1078,10 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Name</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Contact</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Book Details</th>
-                {/* <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Status</th> */}
+                {activeTab === 'flagged' && (
+                  <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Status</th>
+                )}
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Rating</th>
-                {/* <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Transfer To</th> */}
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Comment</th>
                 <th className="text-left p-3 bg-blue-400 font-semibold border-b border-gray-200 text-white text-xs">Actions</th>
               </tr>
@@ -1164,7 +1097,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                       >
                         {lead.name}
                       </button>
-                    </td>
+                     </td>
                     
                     <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       <div className="flex flex-col">
@@ -1175,36 +1108,61 @@ Please format the response in a clear, organized way with sections for Amazon Pr
 
                           let phones = [];
                           try {
-                            phones = JSON.parse(lead.phone);
-                            if (!Array.isArray(phones)) {
-                              phones = [lead.phone];
+                            // Handle different possible formats
+                            if (typeof lead.phone === 'string') {
+                              // Check if it's a JSON array string
+                              if (lead.phone.startsWith('[')) {
+                                phones = JSON.parse(lead.phone);
+                              } else {
+                                // Split by comma to get individual phone numbers
+                                phones = lead.phone.split(',').map(p => p.trim()).filter(p => p);
+                              }
+                            } else if (Array.isArray(lead.phone)) {
+                              phones = lead.phone;
+                            } else {
+                              phones = [String(lead.phone)];
                             }
-                          } catch {
+                            
+                            // Ensure phones is an array and filter out empty values
+                            if (!Array.isArray(phones)) {
+                              phones = [phones];
+                            }
+                            phones = phones.filter(p => p && p.trim());
+                            
+                          } catch (error) {
+                            console.error('Error parsing phones:', error);
                             phones = [lead.phone];
                           }
 
+                          // Show only first phone number
+                          const firstPhone = phones[0];
+                          const remainingCount = phones.length - 1;
+                          
                           return (
-                            <>
-                              {phones.map((phone, index) =>
-                                phone ? (
-                                  <span
-                                    key={index}
-                                    className="text-blue-600 mr-2 text-xs"
-                                  >
-                                    {phone}
-                                  </span>
-                                ) : (
-                                  <span key={index} className="text-gray-400 italic mr-2 text-xs">-</span>
-                                )
+                            <div className="flex items-center flex-wrap gap-1">
+                              {firstPhone ? (
+                                <span className="text-blue-600 text-xs">
+                                  {firstPhone}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">-</span>
                               )}
-                            </>
+                              {remainingCount > 0 && (
+                                <span 
+                                  className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full cursor-help"
+                                  title={`${remainingCount} more phone number(s): ${phones.slice(1).join(', ')}`}
+                                >
+                                  +{remainingCount}
+                                </span>
+                              )}
+                            </div>
                           );
                         })()}
 
                         {lead.email ? (
-                          <span className="text-gray-700 text-xs">{lead.email}</span>
+                          <span className="text-gray-700 text-xs mt-1">{lead.email}</span>
                         ) : (
-                          <span className="text-gray-400 italic text-xs">-</span>
+                          <span className="text-gray-400 italic text-xs mt-1">-</span>
                         )}
                       </div>
                     </td>
@@ -1234,21 +1192,25 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                           {lead.publisher}
                         </div>
                       )}
-                    </td>
+                     </td>
                     
-                    {/* <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
-                      <select
-                        value={lead.status}
-                        onChange={(e) => handleStatusChangeWithConfirmation(lead.id, e.target.value)}
-                        className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 font-medium text-xs w-full max-w-xs"
-                      >
-                        <option value="New">New</option>
-                        <option value="Transferred">Transferred</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Contacted">Contacted</option>
-                        <option value="Closed">Closed</option>
-                      </select>
-                    </td> */}
+                    {activeTab === 'flagged' && (
+                      <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
+                        <select
+                          value={lead.status}
+                          onChange={(e) => handleStatusChangeWithConfirmation(lead.id, e.target.value)}
+                          className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 font-medium text-xs w-full max-w-xs"
+                        >
+                          <option value="New">New</option>
+                          <option value="Contacted">Contacted</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Closed">Closed</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Incompleted">Incompleted</option>
+                          <option value="Transferred">Transferred</option>
+                        </select>
+                       </td>
+                    )}
                     
                     <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       <select
@@ -1273,31 +1235,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                       {updatingRatings[lead.id] && (
                         <span className="text-gray-500 text-xs ml-2">Saving...</span>
                       )}
-                    </td>
-                    
-                    {/* <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
-                      {lead.transferred_to ? (
-                        <div className="text-xs">
-                          {getAgentName(lead.transferred_to)}
-                        </div>
-                      ) : (
-                        <select
-                          value={lead.transferred_to || ''}
-                          onChange={(e) => handleTransferContact(lead.id, e.target.value)}
-                          className="px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 font-medium text-xs w-full max-w-xs"
-                          required
-                        >
-                          <option value="">-- Select Agent --</option>
-                          {agents
-                            .filter(agent => currentAgent && agent.id !== currentAgent.id)
-                            .map(agent => (
-                              <option key={agent.id} value={String(agent.id)}>
-                                {agent.name} ({agent.email})
-                              </option>
-                            ))}
-                        </select>
-                      )}
-                    </td> */}
+                     </td>
                     
                     <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       {editingComment[lead.id] ? (
@@ -1343,7 +1281,7 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                           </button>
                         </>
                       )}
-                    </td>
+                     </td>
                     
                     <td className="p-3 border-b border-gray-200 text-gray-700 text-xs align-top">
                       <div className="flex flex-col gap-1">
@@ -1355,19 +1293,19 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                           View Scripts
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                     </td>
+                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="p-4 border-b border-gray-200 text-center text-gray-500 text-xs">
+                  <td colSpan={activeTab === 'flagged' ? 7 : 6} className="p-4 border-b border-gray-200 text-center text-gray-500 text-xs">
                     {activeTab === 'myContacts' 
                       ? 'No leads assigned to you currently' 
                       : activeTab === 'flagged'
                       ? 'No flagged leads found'
                       : 'No incomplete transactions found'}
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
               )}
             </tbody>
           </table>
@@ -1447,15 +1385,10 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                   type="number"
                   min="1"
                   max={totalPages}
-                  value={searchInput}
+                  value={currentPage}
                   onChange={(e) => {
                     const value = Math.min(Math.max(1, parseInt(e.target.value) || 1), totalPages);
-                    setSearchInput(value);
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      paginate(searchInput);
-                    }
+                    paginate(value);
                   }}
                   className="w-12 px-1.5 py-1 ml-1.5 text-center border border-gray-300 rounded text-sm"
                 />
@@ -1699,16 +1632,13 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                   
                   {geminiResearch && !geminiLoading && !geminiError && (
                     <div className="space-y-4">
-                      {/* Parse and format the research content */}
                       {geminiResearch.split('\n').reduce((sections, line) => {
                         if (line.match(/^\d\.|^[A-Za-z\s]+:/i) || line.startsWith('#')) {
-                          // This is a section header
                           sections.push({
                             type: 'header',
                             content: line.replace(/^[#\d.\s]*/, '').replace(':', '')
                           });
                         } else if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
-                          // This is a bullet point
                           if (sections.length > 0 && sections[sections.length - 1].type === 'bullet') {
                             sections[sections.length - 1].content.push(line.trim());
                           } else {
@@ -1718,7 +1648,6 @@ Please format the response in a clear, organized way with sections for Amazon Pr
                             });
                           }
                         } else if (line.trim() && !line.match(/^```/)) {
-                          // This is regular text
                           sections.push({
                             type: 'text',
                             content: line.trim()
@@ -1879,403 +1808,398 @@ Please format the response in a clear, organized way with sections for Amazon Pr
           </DraggableResizableModal>
         )}
 
-      {/* Modals */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-6 relative shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Confirm Status Change</h3>
-              <button
-                className="bg-none border-none text-xl text-gray-400 cursor-pointer"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  setPendingStatusChange(null);
-                }}
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="text-gray-600 mb-5">
-              Are you sure you want to mark this lead as <strong>{pendingStatusChange?.newStatus}</strong>?
-            </div>
-            <div className="flex justify-end gap-2.5">
-              <button
-                className="px-4 py-2 bg-gray-100 text-gray-700 border-none rounded cursor-pointer font-medium text-sm hover:bg-gray-200"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  setPendingStatusChange(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer font-medium text-sm hover:bg-blue-600"
-                onClick={() => {
-                  if (pendingStatusChange) {
-                    handleStatusUpdate(pendingStatusChange.id, pendingStatusChange.newStatus);
+        {/* Status Change Confirmation Modal */}
+        {showCompleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md p-6 relative shadow-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Confirm Status Change</h3>
+                <button
+                  className="bg-none border-none text-xl text-gray-400 cursor-pointer"
+                  onClick={() => {
                     setShowCompleteModal(false);
                     setPendingStatusChange(null);
-                  }
-                }}
-              >
-                Confirm
-              </button>
+                  }}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="text-gray-600 mb-5">
+                Are you sure you want to mark this lead as <strong>{pendingStatusChange?.newStatus}</strong>?
+              </div>
+              <div className="flex justify-end gap-2.5">
+                <button
+                  className="px-4 py-2 bg-gray-100 text-gray-700 border-none rounded cursor-pointer font-medium text-sm hover:bg-gray-200"
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    setPendingStatusChange(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer font-medium text-sm hover:bg-blue-600"
+                  onClick={() => {
+                    if (pendingStatusChange) {
+                      handleStatusUpdate(pendingStatusChange.id, pendingStatusChange.newStatus);
+                      setShowCompleteModal(false);
+                      setPendingStatusChange(null);
+                    }
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showRatingChangeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-6 relative shadow-lg">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold">Confirm Rating Change</h3>
-              <button
-                className="bg-none border-none text-lg cursor-pointer"
-                onClick={() => {
-                  setShowRatingChangeModal(false);
-                  setPendingRatingChange(null);
-                }}
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="text-sm mb-4">
-              <p>
-                Are you sure you want to change the rating from <strong>{pendingRatingChange?.currentRating || 'None'}</strong> to <strong>{pendingRatingChange?.newRating}</strong>?
-              </p>
-            </div>
-            <div className="flex justify-end gap-2.5">
-              <button
-                className="px-3 py-2 bg-gray-200 border-none rounded cursor-pointer hover:bg-gray-300"
-                onClick={() => {
-                  setShowRatingChangeModal(false);
-                  setPendingRatingChange(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-3 py-2 bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
-                onClick={() => {
-                  if (pendingRatingChange) {
-                    handleRatingChange(pendingRatingChange.id, pendingRatingChange.newRating);
+        {/* Rating Change Confirmation Modal */}
+        {showRatingChangeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md p-6 relative shadow-lg">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-bold">Confirm Rating Change</h3>
+                <button
+                  className="bg-none border-none text-lg cursor-pointer"
+                  onClick={() => {
                     setShowRatingChangeModal(false);
                     setPendingRatingChange(null);
-                  }
-                }}
-              >
-                Confirm
-              </button>
+                  }}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="text-sm mb-4">
+                <p>
+                  Are you sure you want to change the rating from <strong>{pendingRatingChange?.currentRating || 'None'}</strong> to <strong>{pendingRatingChange?.newRating}</strong>?
+                </p>
+              </div>
+              <div className="flex justify-end gap-2.5">
+                <button
+                  className="px-3 py-2 bg-gray-200 border-none rounded cursor-pointer hover:bg-gray-300"
+                  onClick={() => {
+                    setShowRatingChangeModal(false);
+                    setPendingRatingChange(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-3 py-2 bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
+                  onClick={() => {
+                    if (pendingRatingChange) {
+                      handleRatingChange(pendingRatingChange.id, pendingRatingChange.newRating);
+                      setShowRatingChangeModal(false);
+                      setPendingRatingChange(null);
+                    }
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showTransactionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-lg relative my-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Create Transaction for {currentTransactionLead?.name} (ID: {currentTransactionLead?.id})
-              </h3>
-              <button
-                className="bg-none border-none text-xl text-gray-400 cursor-pointer"
-                onClick={() => {
-                  setShowTransactionModal(false);
-                  setCurrentTransactionLead(null);
-                  setServicesDropdownOpen(false);
-                  setUploadedFile(null);
-                  setFilePreviewURL(null);
-                }}
-              >
-                <FaTimes />
-              </button>
-            </div>
-            
-            <div className="space-y-4 mb-5">
-              {/* Transaction Status */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Transaction Status</label>
-                <select
-                  value={transactionData.trans_status}
-                  onChange={(e) => setTransactionData({...transactionData, trans_status: e.target.value})}
-                  className="w-full p-2 rounded border border-gray-300 bg-white text-sm"
-                >
-                  <option value="Sold">Sold</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              {/* Services Dropdown */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Services</label>
-                <div className="relative">
-                  <div 
-                    className="w-full p-2 rounded border border-gray-300 bg-white text-sm cursor-pointer flex justify-between items-center"
-                    onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                  >
-                    <span className="truncate">
-                      {transactionData.service_name.length > 0 
-                        ? transactionData.service_name.join(', ') 
-                        : 'Select Services'}
-                    </span>
-                    <span>{servicesDropdownOpen ? '▲' : '▼'}</span>
-                  </div>
-                  
-                  {servicesDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded mt-1 p-2 z-10 max-h-60 overflow-y-auto shadow-lg">
-                      {serviceOptions.map(service => (
-                        <label key={service} className="flex items-center p-2 cursor-pointer rounded hover:bg-gray-50">
-                          <input
-                            type="checkbox"
-                            checked={transactionData.service_name.includes(service)}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              setTransactionData(prev => ({
-                                ...prev,
-                                service_name: isChecked
-                                  ? [...prev.service_name, service]
-                                  : prev.service_name.filter(s => s !== service)
-                              }));
-                            }}
-                            className="mr-2 cursor-pointer"
-                          />
-                          {service}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Total Service Price */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Total Service Price ($)</label>
-                <input
-                  type="number"
-                  value={transactionData.tot_service_price}
-                  onChange={(e) => {
-                    const totalPrice = parseFloat(e.target.value) || 0;
-                    const amountPaid = parseFloat(transactionData.amount_pay) || 0;
-                    setTransactionData({
-                      ...transactionData, 
-                      tot_service_price: e.target.value,
-                      remain_bal: transactionData.payment_status !== 'Full Payment' 
-                        ? (totalPrice - amountPaid).toFixed(2)
-                        : '0'
-                    });
-                  }}
-                  className="w-full p-2 rounded border border-gray-300 text-sm"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {/* Payment Status */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Payment Status</label>
-                <select
-                  value={transactionData.payment_status}
-                  onChange={(e) => {
-                    const newPaymentStatus = e.target.value;
-                    const totalPrice = parseFloat(transactionData.tot_service_price) || 0;
-                    const amountPaid = parseFloat(transactionData.amount_pay) || 0;
-                    
-                    setTransactionData({
-                      ...transactionData, 
-                      payment_status: newPaymentStatus,
-                      remain_bal: newPaymentStatus === 'Full Payment' 
-                        ? '0' 
-                        : (totalPrice - amountPaid).toFixed(2)
-                    });
-                  }}
-                  className="w-full p-2 rounded border border-gray-300 bg-white text-sm"
-                >
-                  <option value="">Select Payment Status</option>
-                  <option value="First Payment">First Payment</option>
-                  <option value="Second Payment">Second Payment</option>
-                  <option value="Full Payment">Full Payment</option>
-                </select>
-              </div>
-
-              {/* Amount Paid */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Amount Paid ($)</label>
-                <input
-                  type="number"
-                  value={transactionData.amount_pay}
-                  onChange={(e) => {
-                    const amountPaid = parseFloat(e.target.value) || 0;
-                    const totalPrice = parseFloat(transactionData.tot_service_price) || 0;
-                    setTransactionData({
-                      ...transactionData, 
-                      amount_pay: e.target.value,
-                      remain_bal: transactionData.payment_status !== 'Full Payment' 
-                        ? (totalPrice - amountPaid).toFixed(2)
-                        : '0'
-                    });
-                  }}
-                  className="w-full p-2 rounded border border-gray-300 text-sm"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {/* Remaining Balance */}
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Remaining Balance ($)</label>
-                <input
-                  type="number"
-                  value={transactionData.remain_bal}
-                  readOnly
-                  className="w-full p-2 rounded border border-gray-300 text-sm bg-gray-50 cursor-not-allowed"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {/* File Upload */}
-              <div className="flex flex-col gap-2.5">
-                <label className="block font-medium text-gray-700">Upload File (Image or PDF)</label>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-                        setUploadedFile(file);
-                        setFilePreviewURL(URL.createObjectURL(file));
-                      } else {
-                        alert('Please upload only images (JPEG, PNG, etc.) or PDF files.');
-                        e.target.value = '';
-                      }
-                    }
-                  }}
-                  className="p-2 border border-gray-300 rounded text-sm"
-                />
-
-                {uploadedFile && (
-                  <div className="relative border border-gray-200 rounded p-2.5 bg-gray-50 max-h-56 overflow-hidden">
-                    <button
-                      onClick={() => {
-                        setUploadedFile(null);
-                        setFilePreviewURL(null);
-                      }}
-                      className="absolute top-1 right-1 bg-transparent border-none text-red-600 text-lg cursor-pointer z-10"
-                    >
-                      <FaTimes />
-                    </button>
-
-                    {uploadedFile.type.startsWith('image/') ? (
-                      <img
-                        src={filePreviewURL}
-                        alt="Preview"
-                        className="w-full h-48 object-contain block rounded"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center p-4">
-                        <FaFilePdf size={48} className="text-red-500" />
-                        <span className="my-1 text-sm">{uploadedFile.name}</span>
-                        <a
-                          href={filePreviewURL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 underline font-bold text-sm hover:text-blue-700"
-                        >
-                          View PDF
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2.5">
-              <button
-                className="px-4 py-2 bg-gray-100 text-gray-700 border-none rounded cursor-pointer font-medium text-sm hover:bg-gray-200"
-                onClick={() => {
-                  setShowTransactionModal(false);
-                  setCurrentTransactionLead(null);
-                  setServicesDropdownOpen(false);
-                  setUploadedFile(null);
-                  setFilePreviewURL(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer font-medium text-sm hover:bg-blue-600"
-                onClick={async () => {
-                  try {
-                    if (transactionData.service_name.length === 0) {
-                      throw new Error('Please select at least one service');
-                    }
-                    if (!transactionData.payment_status) {
-                      throw new Error('Please select a payment status');
-                    }
-                    if (!transactionData.amount_pay || isNaN(parseFloat(transactionData.amount_pay))) {
-                      throw new Error('Please enter a valid amount paid');
-                    }
-                    if (!transactionData.tot_service_price || isNaN(parseFloat(transactionData.tot_service_price))) {
-                      throw new Error('Please enter a valid total service price');
-                    }
-
-                    const formData = new FormData();
-                    formData.append('lead_name', currentTransactionLead.name);
-                    formData.append('lead_id', currentTransactionLead.id);
-                    formData.append('lead_owner', currentTransactionLead.owner); 
-                    formData.append('lead_transferredTo', currentTransactionLead.transferred_to); 
-                    formData.append('trans_status', transactionData.trans_status);
-                    formData.append('service_name', JSON.stringify(transactionData.service_name));
-                    formData.append('amount_pay', transactionData.amount_pay);
-                    formData.append('payment_status', transactionData.payment_status);
-                    formData.append('tot_service_price', transactionData.tot_service_price);
-                    formData.append('remain_bal', transactionData.remain_bal);
-                    if (uploadedFile) {
-                      formData.append('file', uploadedFile);
-                    }
-
-                    const response = await fetch(`${API_URL}/api/create-transaction`, {
-                      method: 'POST',
-                      body: formData,
-                      credentials: 'include'
-                    });
-
-                    const result = await response.json();
-
-                    if (!response.ok) {
-                      throw new Error(result.error || 'Failed to save transaction');
-                    }
-
-                    setLeads(prevLeads => 
-                      prevLeads.map(lead => 
-                        lead.id === currentTransactionLead.id 
-                          ? { ...lead, status: 'Completed' } 
-                          : lead
-                      )
-                    );
-
+        {/* Transaction Modal */}
+        {showTransactionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-lg relative my-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Create Transaction for {currentTransactionLead?.name} (ID: {currentTransactionLead?.id})
+                </h3>
+                <button
+                  className="bg-none border-none text-xl text-gray-400 cursor-pointer"
+                  onClick={() => {
                     setShowTransactionModal(false);
                     setCurrentTransactionLead(null);
                     setServicesDropdownOpen(false);
                     setUploadedFile(null);
                     setFilePreviewURL(null);
+                  }}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              
+              <div className="space-y-4 mb-5">
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">Transaction Status</label>
+                  <select
+                    value={transactionData.trans_status}
+                    onChange={(e) => setTransactionData({...transactionData, trans_status: e.target.value})}
+                    className="w-full p-2 rounded border border-gray-300 bg-white text-sm"
+                  >
+                    <option value="Sold">Sold</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
 
-                    alert('Transaction saved successfully!');
-                  } catch (error) {
-                    console.error('Error saving transaction:', error);
-                    alert(`Error: ${error.message}`);
-                  }
-                }}
-              >
-                Save Transaction
-              </button>
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">Services</label>
+                  <div className="relative">
+                    <div 
+                      className="w-full p-2 rounded border border-gray-300 bg-white text-sm cursor-pointer flex justify-between items-center"
+                      onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
+                    >
+                      <span className="truncate">
+                        {transactionData.service_name.length > 0 
+                          ? transactionData.service_name.join(', ') 
+                          : 'Select Services'}
+                      </span>
+                      <span>{servicesDropdownOpen ? '▲' : '▼'}</span>
+                    </div>
+                    
+                    {servicesDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded mt-1 p-2 z-10 max-h-60 overflow-y-auto shadow-lg">
+                        {serviceOptions.map(service => (
+                          <label key={service} className="flex items-center p-2 cursor-pointer rounded hover:bg-gray-50">
+                            <input
+                              type="checkbox"
+                              checked={transactionData.service_name.includes(service)}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                setTransactionData(prev => ({
+                                  ...prev,
+                                  service_name: isChecked
+                                    ? [...prev.service_name, service]
+                                    : prev.service_name.filter(s => s !== service)
+                                }));
+                              }}
+                              className="mr-2 cursor-pointer"
+                            />
+                            {service}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">Total Service Price ($)</label>
+                  <input
+                    type="number"
+                    value={transactionData.tot_service_price}
+                    onChange={(e) => {
+                      const totalPrice = parseFloat(e.target.value) || 0;
+                      const amountPaid = parseFloat(transactionData.amount_pay) || 0;
+                      setTransactionData({
+                        ...transactionData, 
+                        tot_service_price: e.target.value,
+                        remain_bal: transactionData.payment_status !== 'Full Payment' 
+                          ? (totalPrice - amountPaid).toFixed(2)
+                          : '0'
+                      });
+                    }}
+                    className="w-full p-2 rounded border border-gray-300 text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">Payment Status</label>
+                  <select
+                    value={transactionData.payment_status}
+                    onChange={(e) => {
+                      const newPaymentStatus = e.target.value;
+                      const totalPrice = parseFloat(transactionData.tot_service_price) || 0;
+                      const amountPaid = parseFloat(transactionData.amount_pay) || 0;
+                      
+                      setTransactionData({
+                        ...transactionData, 
+                        payment_status: newPaymentStatus,
+                        remain_bal: newPaymentStatus === 'Full Payment' 
+                          ? '0' 
+                          : (totalPrice - amountPaid).toFixed(2)
+                      });
+                    }}
+                    className="w-full p-2 rounded border border-gray-300 bg-white text-sm"
+                  >
+                    <option value="">Select Payment Status</option>
+                    <option value="First Payment">First Payment</option>
+                    <option value="Second Payment">Second Payment</option>
+                    <option value="Full Payment">Full Payment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">Amount Paid ($)</label>
+                  <input
+                    type="number"
+                    value={transactionData.amount_pay}
+                    onChange={(e) => {
+                      const amountPaid = parseFloat(e.target.value) || 0;
+                      const totalPrice = parseFloat(transactionData.tot_service_price) || 0;
+                      setTransactionData({
+                        ...transactionData, 
+                        amount_pay: e.target.value,
+                        remain_bal: transactionData.payment_status !== 'Full Payment' 
+                          ? (totalPrice - amountPaid).toFixed(2)
+                          : '0'
+                      });
+                    }}
+                    className="w-full p-2 rounded border border-gray-300 text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">Remaining Balance ($)</label>
+                  <input
+                    type="number"
+                    value={transactionData.remain_bal}
+                    readOnly
+                    className="w-full p-2 rounded border border-gray-300 text-sm bg-gray-50 cursor-not-allowed"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  <label className="block font-medium text-gray-700">Upload File (Image or PDF)</label>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                          setUploadedFile(file);
+                          setFilePreviewURL(URL.createObjectURL(file));
+                        } else {
+                          alert('Please upload only images (JPEG, PNG, etc.) or PDF files.');
+                          e.target.value = '';
+                        }
+                      }
+                    }}
+                    className="p-2 border border-gray-300 rounded text-sm"
+                  />
+
+                  {uploadedFile && (
+                    <div className="relative border border-gray-200 rounded p-2.5 bg-gray-50 max-h-56 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setUploadedFile(null);
+                          setFilePreviewURL(null);
+                        }}
+                        className="absolute top-1 right-1 bg-transparent border-none text-red-600 text-lg cursor-pointer z-10"
+                      >
+                        <FaTimes />
+                      </button>
+
+                      {uploadedFile.type.startsWith('image/') ? (
+                        <img
+                          src={filePreviewURL}
+                          alt="Preview"
+                          className="w-full h-48 object-contain block rounded"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center p-4">
+                          <FaFilePdf size={48} className="text-red-500" />
+                          <span className="my-1 text-sm">{uploadedFile.name}</span>
+                          <a
+                            href={filePreviewURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 underline font-bold text-sm hover:text-blue-700"
+                          >
+                            View PDF
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5">
+                <button
+                  className="px-4 py-2 bg-gray-100 text-gray-700 border-none rounded cursor-pointer font-medium text-sm hover:bg-gray-200"
+                  onClick={() => {
+                    setShowTransactionModal(false);
+                    setCurrentTransactionLead(null);
+                    setServicesDropdownOpen(false);
+                    setUploadedFile(null);
+                    setFilePreviewURL(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer font-medium text-sm hover:bg-blue-600"
+                  onClick={async () => {
+                    try {
+                      if (transactionData.service_name.length === 0) {
+                        throw new Error('Please select at least one service');
+                      }
+                      if (!transactionData.payment_status) {
+                        throw new Error('Please select a payment status');
+                      }
+                      if (!transactionData.amount_pay || isNaN(parseFloat(transactionData.amount_pay))) {
+                        throw new Error('Please enter a valid amount paid');
+                      }
+                      if (!transactionData.tot_service_price || isNaN(parseFloat(transactionData.tot_service_price))) {
+                        throw new Error('Please enter a valid total service price');
+                      }
+
+                      const formData = new FormData();
+                      formData.append('lead_name', currentTransactionLead.name);
+                      formData.append('lead_id', currentTransactionLead.id);
+                      formData.append('lead_owner', currentTransactionLead.owner); 
+                      formData.append('lead_transferredTo', currentTransactionLead.transferred_to); 
+                      formData.append('trans_status', transactionData.trans_status);
+                      formData.append('service_name', JSON.stringify(transactionData.service_name));
+                      formData.append('amount_pay', transactionData.amount_pay);
+                      formData.append('payment_status', transactionData.payment_status);
+                      formData.append('tot_service_price', transactionData.tot_service_price);
+                      formData.append('remain_bal', transactionData.remain_bal);
+                      if (uploadedFile) {
+                        formData.append('file', uploadedFile);
+                      }
+
+                      const response = await fetch(`${API_URL}/api/create-transaction`, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                      });
+
+                      const result = await response.json();
+
+                      if (!response.ok) {
+                        throw new Error(result.error || 'Failed to save transaction');
+                      }
+
+                      setLeads(prevLeads => 
+                        prevLeads.map(lead => 
+                          lead.id === currentTransactionLead.id 
+                            ? { ...lead, status: 'Completed' } 
+                            : lead
+                        )
+                      );
+
+                      setShowTransactionModal(false);
+                      setCurrentTransactionLead(null);
+                      setServicesDropdownOpen(false);
+                      setUploadedFile(null);
+                      setFilePreviewURL(null);
+
+                      alert('Transaction saved successfully!');
+                    } catch (error) {
+                      console.error('Error saving transaction:', error);
+                      alert(`Error: ${error.message}`);
+                    }
+                  }}
+                >
+                  Save Transaction
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </>
   );
 }

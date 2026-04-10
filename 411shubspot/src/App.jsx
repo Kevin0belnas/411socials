@@ -42,6 +42,7 @@ import TaskTest from './pages/employee/TaskTest';
 import EventProgram from './pages/employee/EventProgram';
 import RemindersPage from './pages/employee/RemindersPage';
 import Tasks from './pages/employee/Tasks';
+import LeadsManagement from './pages/admin/LeadsManagement';
 
 // Admin Layout Component
 const AdminLayout = () => (
@@ -103,7 +104,7 @@ export default function App() {
               <Route path="/paymentreceipt" element={<PaymentReceipt />} />
               <Route path="/vendor" element={<Vendor />} />
               <Route path="/analytics" element={<Analytics />} />
-
+              <Route path="/leadsmanagement" element={<LeadsManagement/>} />
 
 
             </Route>
