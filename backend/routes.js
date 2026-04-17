@@ -3960,7 +3960,7 @@ router.get('/all-users', async (req, res) => {
 
   try {
     const [users] = await db.execute(`
-      SELECT id, email, role, status, created_at, updated_at 
+      SELECT id, name, email, role, status, created_at, updated_at 
       FROM users
       ORDER BY created_at DESC
     `);
@@ -7401,25 +7401,85 @@ router.post('/manage-leads/bulk-delete', async (req, res) => {
   const db = getDB();
   const { contactIds } = req.body;
   
+  // Validation
   if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
     return res.status(400).json({ error: 'No contact IDs provided' });
   }
   
+  // Limit batch size for safety (MySQL has limits on IN clause)
+  if (contactIds.length > 5000) {
+    return res.status(400).json({ 
+      error: 'Batch too large. Maximum 5000 contacts per request.',
+      maxSize: 5000,
+      receivedSize: contactIds.length
+    });
+  }
+  
+  // Validate all IDs are numbers
+  const validIds = contactIds.filter(id => !isNaN(parseInt(id)) && parseInt(id) > 0);
+  if (validIds.length === 0) {
+    return res.status(400).json({ error: 'No valid contact IDs provided' });
+  }
+  
+  if (validIds.length !== contactIds.length) {
+    console.warn(`Filtered out ${contactIds.length - validIds.length} invalid IDs`);
+  }
+  
   try {
-    const placeholders = contactIds.map(() => '?').join(',');
-    const query = `DELETE FROM contacts WHERE id IN (${placeholders})`;
+    // Use prepared statement with placeholders
+    const placeholders = validIds.map(() => '?').join(',');
     
-    const [result] = await db.execute(query, contactIds);
+    // Optional: First check which contacts exist and are deletable
+    const [existingContacts] = await db.execute(
+      `SELECT id, status, rating FROM contacts WHERE id IN (${placeholders})`,
+      validIds
+    );
+    
+    // Filter out protected contacts (Completed status or Flagged rating)
+    const deletableIds = existingContacts
+      .filter(contact => contact.status !== 'Completed' && contact.rating !== 'Flagged')
+      .map(contact => contact.id);
+    
+    const protectedCount = existingContacts.length - deletableIds.length;
+    
+    if (protectedCount > 0) {
+      console.log(`Skipping ${protectedCount} protected contacts (Completed/Flagged)`);
+    }
+    
+    if (deletableIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'No deletable contacts found. Protected contacts cannot be deleted.',
+        protectedCount: protectedCount
+      });
+    }
+    
+    // Delete only deletable contacts
+    const deletablePlaceholders = deletableIds.map(() => '?').join(',');
+    const [result] = await db.execute(
+      `DELETE FROM contacts WHERE id IN (${deletablePlaceholders})`,
+      deletableIds
+    );
     
     res.json({
       success: true,
       deletedCount: result.affectedRows,
-      message: `${result.affectedRows} contact(s) deleted successfully`
+      protectedSkipped: protectedCount,
+      requestedCount: validIds.length,
+      message: `${result.affectedRows} contact(s) deleted successfully${protectedCount > 0 ? ` (${protectedCount} protected contacts skipped)` : ''}`
     });
     
   } catch (err) {
     console.error('Error deleting contacts:', err);
-    res.status(500).json({ error: err.message });
+    
+    // Handle specific MySQL errors
+    if (err.code === 'ER_TOO_MANY_HIGH_PRECISION') {
+      return res.status(400).json({ error: 'Too many IDs in request. Please reduce batch size.' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to delete contacts',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -7497,5 +7557,189 @@ router.get('/manage-leads/export', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.post('/upload-leads', async (req, res) => {
+  const db = getDB();
+
+  try {
+    let contacts = req.body;
+
+    if (!Array.isArray(contacts)) {
+      contacts = [contacts];
+    }
+
+    // Validate
+    const invalidContacts = contacts.filter(c => !c.name);
+    if (invalidContacts.length > 0) {
+      return res.status(400).json({
+        error: 'Name is required',
+        invalidContacts
+      });
+    }
+
+    await db.beginTransaction();
+    const insertedContacts = [];
+    const skippedContacts = [];
+
+    try {
+      for (const contact of contacts) {
+        const {
+          name,
+          email,
+          phone,
+          leadOwner,
+          author,
+          publisher,
+          bookTitle
+        } = contact;
+
+        // Normalize phone (remove spaces, dashes, etc.)
+        const cleanPhone = phone ? phone.toString().replace(/\D/g, '') : null;
+
+        // Check for existing leads (case-insensitive for name and book_title)
+        let query = `SELECT id, name, phone, book_title FROM contacts WHERE `;
+        const params = [];
+        const conditions = [];
+        const matchReasons = [];
+
+        if (name) {
+          conditions.push(`LOWER(name) = LOWER(?)`);
+          params.push(name);
+          matchReasons.push('name');
+        }
+        
+        if (cleanPhone) {
+          conditions.push(`phone = ?`);
+          params.push(cleanPhone);
+          matchReasons.push('phone');
+        }
+        
+        if (bookTitle) {
+          conditions.push(`LOWER(book_title) = LOWER(?)`);
+          params.push(bookTitle);
+          matchReasons.push('book title');
+        }
+
+        if (conditions.length === 0) {
+          // Insert without duplicate check
+          const [result] = await db.execute(
+            `INSERT INTO contacts 
+            (name, email, phone, lead_owner, author, publisher, book_title, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              name,
+              email || null,
+              cleanPhone,
+              leadOwner || null,
+              author || null,
+              publisher || null,
+              bookTitle || null,
+              'New'
+            ]
+          );
+
+          const [newContact] = await db.execute(
+            'SELECT * FROM contacts WHERE id = ?',
+            [result.insertId]
+          );
+
+          insertedContacts.push(newContact[0]);
+          continue;
+        }
+
+        query += conditions.join(' OR ');
+        
+        const [existing] = await db.execute(query, params);
+
+        if (existing.length > 0) {
+          // Determine which field(s) caused the duplicate
+          const duplicateFields = [];
+          if (name && existing.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
+            duplicateFields.push(`name: "${name}"`);
+          }
+          if (cleanPhone && existing.some(ex => ex.phone === cleanPhone)) {
+            duplicateFields.push(`phone: "${phone}"`);
+          }
+          if (bookTitle && existing.some(ex => ex.book_title?.toLowerCase() === bookTitle.toLowerCase())) {
+            duplicateFields.push(`book title: "${bookTitle}"`);
+          }
+          
+          console.log(`Lead skipped - duplicate found by: ${duplicateFields.join(', ')}`);
+          skippedContacts.push({
+            name,
+            email,
+            phone: phone || null,
+            bookTitle: bookTitle || null,
+            reason: `Duplicate found by: ${duplicateFields.join(', ')}`,
+            existingRecords: existing.map(ex => ({ 
+              id: ex.id, 
+              name: ex.name, 
+              phone: ex.phone, 
+              bookTitle: ex.book_title 
+            }))
+          });
+          continue;
+        }
+
+        // Insert new contact
+        const [result] = await db.execute(
+          `INSERT INTO contacts 
+          (name, email, phone, lead_owner, author, publisher, book_title, status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            name,
+            email || null,
+            cleanPhone,
+            leadOwner || null,
+            author || null,
+            publisher || null,
+            bookTitle || null,
+            'New'
+          ]
+        );
+
+        const [newContact] = await db.execute(
+          'SELECT * FROM contacts WHERE id = ?',
+          [result.insertId]
+        );
+
+        insertedContacts.push(newContact[0]);
+      }
+
+      await db.commit();
+
+      const response = {
+        success: true,
+        message: `Processed ${contacts.length} leads: ${insertedContacts.length} inserted, ${skippedContacts.length} skipped`,
+        summary: {
+          total: contacts.length,
+          inserted: insertedContacts.length,
+          skipped: skippedContacts.length
+        },
+        details: {
+          inserted: insertedContacts.map(c => ({ 
+            id: c.id, 
+            name: c.name, 
+            phone: c.phone, 
+            bookTitle: c.book_title 
+          })),
+          skipped: skippedContacts
+        }
+      };
+
+      console.log(`📊 Upload Summary: ✅ ${insertedContacts.length} inserted, ⏭️ ${skippedContacts.length} skipped`);
+      
+      res.status(201).json(response);
+      
+    } catch (err) {
+      await db.rollback();
+      throw err;
+    }
+  } catch (err) {
+    console.error('Upload Leads Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;

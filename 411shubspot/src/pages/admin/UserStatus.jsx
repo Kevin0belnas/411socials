@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const UserStatus = () => {
@@ -65,55 +66,18 @@ const UserStatus = () => {
   };
 
   if (loading) return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh'
-    }}>
-      <div style={{
-        border: '4px solid rgba(0, 0, 0, 0.1)',
-        borderRadius: '50%',
-        borderTop: '4px solid #007bff',
-        width: '40px',
-        height: '40px',
-        animation: 'spin 1s linear infinite',
-        marginBottom: '15px'
-      }}></div>
-      <p>Loading users...</p>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+    <div className="flex flex-col items-center justify-center h-screen">
+      <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+      <p className="text-gray-600">Loading users...</p>
     </div>
   );
 
   if (error) return (
-    <div style={{
-      padding: '15px',
-      background: '#f8d7da',
-      color: '#721c24',
-      border: '1px solid #f5c6cb',
-      borderRadius: '4px',
-      margin: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between'
-    }}>
-      {error}
+    <div className="bg-red-100 text-red-700 border border-red-200 rounded-lg p-4 m-5 flex items-center justify-between">
+      <span>{error}</span>
       <button 
         onClick={fetchUsers}
-        style={{
-          background: '#dc3545',
-          color: 'white',
-          border: 'none',
-          padding: '5px 10px',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
+        className="bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition-colors"
       >
         Retry
       </button>
@@ -121,151 +85,67 @@ const UserStatus = () => {
   );
 
   return (
-    <div style={{
-      padding: '20px',
-      maxWidth: '1200px',
-      margin: '0 auto'
-    }}>
-      <h1 style={{ marginBottom: '20px' }}>User Management</h1>
+    <div className="p-5 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-5 text-gray-800">User Management</h1>
       
-      <div style={{
-        marginBottom: '20px',
-        display: 'flex',
-        justifyContent: 'flex-end'
-      }}>
+      <div className="mb-5 flex justify-end">
         <button 
           onClick={fetchUsers}
-          style={{
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px'
-          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          ⟳ Refresh Users
+          <span>⟳</span>
+          Refresh Users
         </button>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          marginTop: '15px'
-        }}>
+      <div className="overflow-x-auto">
+        <table className="w-full mt-4">
           <thead>
-            <tr>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>ID</th>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>Email</th>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>Role</th>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>Status</th>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>Created At</th>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>Updated At</th>
-              <th style={{
-                padding: '12px 15px',
-                textAlign: 'left',
-                backgroundColor: '#f8f9fa',
-                fontWeight: '600'
-              }}>Actions</th>
+            <tr className="bg-gray-50">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Created At</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Updated At</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map(user => (
-              <tr key={user.id} style={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>{user.id}</td>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>{user.email}</td>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>{user.role}</td>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '0.8rem',
-                    fontWeight: '500',
-                    textTransform: 'capitalize',
-                    backgroundColor: (user.status || 'Active') === 'Active' ? '#d4edda' : '#f8d7da',
-                    color: (user.status || 'Active') === 'Active' ? '#155724' : '#721c24'
-                  }}>
+              <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">{user.id}</td>
+                <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{user.name}</td>
+                <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{user.email}</td>
+                <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">
+                  <span className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${
+                    user.role === 'admin' 
+                      ? 'bg-purple-100 text-purple-800' 
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm border-b border-gray-200">
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                    (user.status || 'Active') === 'Active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
                     {user.status || 'Active'}
                   </span>
                 </td>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>{new Date(user.created_at).toLocaleString()}</td>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>{new Date(user.updated_at).toLocaleString()}</td>
-                <td style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #ddd'
-                }}>
+                <td className="px-4 py-3 text-sm text-gray-500 border-b border-gray-200">
+                  {new Date(user.created_at).toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-500 border-b border-gray-200">
+                  {new Date(user.updated_at).toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-sm border-b border-gray-200">
                   <button 
                     onClick={() => handleEditClick(user)}
-                    style={{
-                      background: '#ffc107',
-                      color: '#212529',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        background: '#e0a800'
-                      }
-                    }}
+                    className="bg-yellow-500 text-gray-900 px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors text-sm"
                   >
                     Edit
                   </button>
@@ -277,118 +157,61 @@ const UserStatus = () => {
       </div>
 
       {editingUser && (
-        <div style={{
-          position: 'fixed',
-          top: '0',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: '1000'
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '25px',
-            borderRadius: '8px',
-            width: '100%',
-            maxWidth: '500px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
-          }}>
-            <h2 style={{ marginTop: '0', marginBottom: '20px' }}>Edit User</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-bold mt-0 mb-4 text-gray-800">Edit User</h2>
             <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Email:</label>
+              <div className="mb-4">
+                <label className="block mb-2 font-medium text-gray-700">Email:</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #ced4da',
-                    borderRadius: '4px',
-                    fontSize: '16px'
-                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Role:</label>
+              <div className="mb-4">
+                <label className="block mb-2 font-medium text-gray-700">Role:</label>
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #ced4da',
-                    borderRadius: '4px',
-                    fontSize: '16px'
-                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="agent">Agent</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
               
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Status:</label>
+              <div className="mb-4">
+                <label className="block mb-2 font-medium text-gray-700">Status:</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #ced4da',
-                    borderRadius: '4px',
-                    fontSize: '16px'
-                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
               
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '10px',
-                marginTop: '20px'
-              }}>
+              <div className="flex justify-end gap-3 mt-5">
                 <button 
                   type="button" 
                   onClick={() => setEditingUser(null)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    background: '#f8f9fa',
-                    border: '1px solid #ddd'
-                  }}
+                  className="px-4 py-2 rounded-md cursor-pointer bg-gray-100 border border-gray-300 hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  style={{
-                    background: '#28a745',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    '&:hover': {
-                      background: '#218838'
-                    }
-                  }}
+                  className="px-4 py-2 rounded-md cursor-pointer bg-green-600 text-white hover:bg-green-700 transition-colors"
                 >
                   Save Changes
                 </button>

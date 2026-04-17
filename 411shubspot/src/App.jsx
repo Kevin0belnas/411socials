@@ -43,6 +43,7 @@ import EventProgram from './pages/employee/EventProgram';
 import RemindersPage from './pages/employee/RemindersPage';
 import Tasks from './pages/employee/Tasks';
 import LeadsManagement from './pages/admin/LeadsManagement';
+import UploadLeads from './pages/admin/UploadLeads';
 
 // Admin Layout Component
 const AdminLayout = () => (
@@ -105,6 +106,7 @@ export default function App() {
               <Route path="/vendor" element={<Vendor />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/leadsmanagement" element={<LeadsManagement/>} />
+              <Route path="/uploadleads" element={<UploadLeads/>} />
 
 
             </Route>

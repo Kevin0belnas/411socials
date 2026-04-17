@@ -175,8 +175,10 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5174",
-  "http://192.168.68.20:5174",
-  "https://nn6fwsg5-5174.asse.devtunnels.ms"
+  "http://192.168.68.61:5174",
+  "https://nn6fwsg5-5174.asse.devtunnels.ms",
+  'https://411socials.site',
+  'https://api.411socials.site'
 ];
 
 app.use(
@@ -207,112 +209,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 // Routes
 app.use("/api", routes);
 
-// ======================
-// AUTO RESET FUNCTION
-// ======================
-
-// Function to check and reset leads older than 7 days
-// Function to check and reset leads older than 7 days
-async function resetOldLeads() {
-  let retries = 3;
-  
-  while (retries > 0) {
-    try {
-      // Try to get database connection
-      const db = getDB();
-      
-      if (!db) {
-        console.log(`⏳ Waiting for database connection... (${retries} retries left)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        retries--;
-        continue;
-      }
-      
-      console.log('🔄 Checking for leads older than 7 days...', new Date().toISOString());
-      
-      // 1. Reset leads that are NOT completed and older than 7 days
-      // const [result] = await db.execute(`
-      //   UPDATE contacts 
-      //   SET status = 'New',
-      //       rating = NULL,
-      //       assigned_to = NULL,
-      //       lead_owner = NULL
-      //   WHERE status != 'Completed'
-      //   AND (
-      //     rating = 'Flagged' 
-      //     OR rating = 'Decline'
-      //     OR status = 'Contacted'
-      //     OR status = 'In Progress'
-      //   )
-      //   AND updated_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
-      // `);
-      
-      // 2. Reset leads based on assignment_history (cleared leads)
-      // FIXED: Removed GROUP BY and used subquery instead
-      const [historyResult] = await db.execute(`
-        UPDATE contacts c
-        SET c.status = 'New',
-            c.rating = NULL,
-            c.assigned_to = NULL,
-            c.lead_owner = NULL
-        WHERE c.status != 'Completed'
-        AND c.status = 'Contacted'
-        AND c.assigned_to IS NULL
-        AND EXISTS (
-          SELECT 1 FROM assignment_history ah 
-          WHERE ah.lead_id = c.id 
-          AND ah.removed_at IS NOT NULL 
-          AND ah.removed_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
-        )
-      `);
-      
-      const totalReset = result.affectedRows + historyResult.affectedRows;
-      
-      if (totalReset > 0) {
-        console.log(`✅ Auto-reset ${totalReset} leads older than 7 days`);
-        console.log(`   - From contacts table: ${result.affectedRows}`);
-        console.log(`   - From assignment history: ${historyResult.affectedRows}`);
-      } else {
-        console.log('✅ No leads needed reset (all leads are within 7 days or completed)');
-      }
-      
-      return totalReset;
-      
-    } catch (error) {
-      console.error('❌ Error resetting old leads:', error.message);
-      if (retries === 1) {
-        console.error('❌ Failed to reset leads after retries');
-        return 0;
-      }
-      console.log(`⏳ Retrying in 2 seconds... (${retries - 1} retries left)`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      retries--;
-    }
-  }
-  
-  return 0;
-}
-
-// 🧹 Clean up old assignment history (runs every 24 hours)
-setInterval(async () => {
-  try {
-    const db = getDB();
-    if (!db) return;
-    
-    const [result] = await db.execute(
-      'DELETE FROM assignment_history WHERE assigned_at < NOW() - INTERVAL 30 DAY'
-    );
-    if (result.affectedRows > 0) {
-      console.log(`[CLEANUP] Deleted ${result.affectedRows} old assignment_history records.`);
-    }
-  } catch (err) {
-    console.error('[CLEANUP ERROR]', err.message);
-  }
-}, 1000 * 60 * 60 * 24); // Runs every 24 hours
-
-// ======================
-// DATABASE CONNECTION AND SERVER STARTUP
-// ======================
 
 // Connect to databases and start server
 async function startServer() {
@@ -345,4 +241,4 @@ async function startServer() {
 startServer();
 
 // Export for testing
-module.exports = { resetOldLeads };
+module.exports = {};

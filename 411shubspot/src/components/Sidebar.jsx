@@ -18,7 +18,8 @@ import {
   FaUserEdit,
   FaPhoneAlt,
   FaMoneyBill,
-  FaReceipt
+  FaReceipt,
+  FaTableTennis
 } from 'react-icons/fa';
 
 export default function Sidebar() {
@@ -36,6 +37,8 @@ export default function Sidebar() {
     { icon: <FaPhoneAlt />, name: "Contacts", path: "/contacts" },
     { icon: <FaUserEdit />, name: "User Management", path: "/userstatus" },
     { icon: <FaTags />, name: "Analytics", path: "/analytics" },
+    { icon: <FaTableTennis />, name: "Leads Management", path: "/leadsmanagement" },
+    { icon: <FaTableTennis />, name: "Upload Leads", path: "/uploadleads" },
 
     {
       icon: <FaTasks />,
