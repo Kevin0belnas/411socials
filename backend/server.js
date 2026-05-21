@@ -176,8 +176,8 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "http://192.168.68.7:5173",
-  "http://192.168.68.7:5174",
+  "http://192.168.68.54:5173",
+  "http://192.168.68.54:5174",
   "https://nn6fwsg5-5174.asse.devtunnels.ms",
   'https://411socials.site',
   'https://api.411socials.site'
